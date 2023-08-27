@@ -7,6 +7,7 @@ import (
 	"github.com/kholodmv/gophermart/internal/logger"
 	"github.com/kholodmv/gophermart/internal/logger/sl"
 	"github.com/kholodmv/gophermart/internal/storage/postgreSQL"
+	_ "github.com/lib/pq"
 	"golang.org/x/exp/slog"
 	"net/http"
 	"os"
@@ -14,20 +15,22 @@ import (
 	"syscall"
 )
 
+var secretKey []byte
+
 func main() {
 	cfg := config.UseServerStartParams()
 
 	log := logger.SetupLogger(cfg.Env)
 	log = log.With(slog.String("env", cfg.Env))
 
-	_, err := postgreSQL.New(cfg.DatabaseUri)
+	db, err := postgreSQL.New(cfg.DatabaseUri)
 	if err != nil {
 		log.Error("failed to initialize storage", sl.Err(err))
 	}
 
 	router := chi.NewRouter()
 
-	handler := handlers.NewHandler(router, log)
+	handler := handlers.NewHandler(router, log, db)
 	handler.RegisterRoutes(router)
 
 	log.Info("initializing server", slog.String("address", cfg.RunAddress))

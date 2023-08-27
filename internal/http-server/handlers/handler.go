@@ -1,37 +1,65 @@
 package handlers
 
 import (
-	"github.com/go-chi/chi/v5"
+	"encoding/json"
+	"fmt"
 	"github.com/go-chi/chi/v5/middleware"
-	mwLogger "github.com/kholodmv/gophermart/internal/http-server/middleware/logger"
+	"github.com/kholodmv/gophermart/internal/logger/sl"
+	"github.com/kholodmv/gophermart/internal/models"
 	"golang.org/x/exp/slog"
+	"net/http"
 )
 
-type Handler struct {
-	router chi.Router
-	log    *slog.Logger
-}
+func (mh *Handler) Register(res http.ResponseWriter, req *http.Request) {
+	const op = "handler.Register"
 
-func NewHandler(router chi.Router, log *slog.Logger) *Handler {
-	h := &Handler{
-		router: router,
-		log:    log,
+	mh.log.With(
+		slog.String("op", op),
+		slog.String("request_id", middleware.GetReqID(req.Context())),
+	)
+
+	var newUser models.User
+	decoder := json.NewDecoder(req.Body)
+	err := decoder.Decode(&newUser)
+	if err != nil {
+		http.Error(res, "Invalid request format", http.StatusBadRequest)
+		mh.log.Error("Invalid request format", sl.Err(err))
+		return
 	}
 
-	return h
+	hashUser, err := newUser.GenerateHashPassword()
+	err = mh.db.AddUser(req.Context(), hashUser)
+	if err != nil {
+		mh.log.Error("New user has not been register", sl.Err(err))
+		res.WriteHeader(http.StatusConflict)
+		return
+	}
+	mh.log.Info("User successfully registered")
+
+	res.WriteHeader(http.StatusOK)
+	fmt.Fprintln(res, "User successfully registered and authenticated")
 }
 
-func (mh *Handler) RegisterRoutes(router *chi.Mux) {
-	mh.router.Use(middleware.RequestID)
-	mh.router.Use(mwLogger.New(mh.log))
-	mh.router.Use(middleware.Recoverer)
-	mh.router.Use(middleware.URLFormat)
+func (mh *Handler) Login(res http.ResponseWriter, req *http.Request) {
 
-	router.Post("/api/user/register", mh.Register)
-	router.Post("/api/user/login", mh.Login)
-	router.Post("/api/user/orders", mh.PostOrderNumber)
-	router.Get("/api/user/orders", mh.GetOrderNumbers)
-	router.Get("/api/user/balance", mh.GetBalance)
-	router.Post("/api/user/balance/withdraw", mh.PostWithdrawFromBalance)
-	router.Get("/api/user/withdrawals", mh.GetWithdrawals)
+}
+
+func (mh *Handler) PostOrderNumber(res http.ResponseWriter, req *http.Request) {
+
+}
+
+func (mh *Handler) GetOrderNumbers(res http.ResponseWriter, req *http.Request) {
+
+}
+
+func (mh *Handler) GetBalance(res http.ResponseWriter, req *http.Request) {
+
+}
+
+func (mh *Handler) PostWithdrawFromBalance(res http.ResponseWriter, req *http.Request) {
+
+}
+
+func (mh *Handler) GetWithdrawals(res http.ResponseWriter, req *http.Request) {
+
 }
