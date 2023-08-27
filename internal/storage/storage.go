@@ -7,4 +7,5 @@ import (
 
 type Storage interface {
 	AddUser(ctx context.Context, user *models.User) error
+	GetUser(ctx context.Context, login string) (*models.User, error)
 }

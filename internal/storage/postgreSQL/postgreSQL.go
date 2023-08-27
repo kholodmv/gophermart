@@ -60,3 +60,14 @@ func (s *Storage) AddUser(ctx context.Context, u *models.User) error {
 	}
 	return nil
 }
+
+func (s *Storage) GetUser(ctx context.Context, login string) (*models.User, error) {
+	u := new(models.User)
+	row := s.db.QueryRowContext(ctx,
+		"SELECT login, pass_hash FROM users WHERE login = $1", login)
+
+	if err := row.Scan(&u.Login, &u.HashPassword); err != nil {
+		return nil, err
+	}
+	return u, nil
+}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/kholodmv/gophermart/internal/auth"
 	"github.com/kholodmv/gophermart/internal/logger/sl"
 	"github.com/kholodmv/gophermart/internal/models"
 	"golang.org/x/exp/slog"
@@ -41,7 +42,30 @@ func (mh *Handler) Register(res http.ResponseWriter, req *http.Request) {
 }
 
 func (mh *Handler) Login(res http.ResponseWriter, req *http.Request) {
+	var credentials models.User
+	decoder := json.NewDecoder(req.Body)
+	err := decoder.Decode(&credentials)
+	if err != nil {
+		http.Error(res, "Invalid request format", http.StatusBadRequest)
+		return
+	}
 
+	user, err := mh.db.GetUser(req.Context(), credentials.Login)
+	if err != nil {
+		http.Error(res, "Invalid username/password pair", http.StatusUnauthorized)
+		return
+	}
+
+	token, err := auth.CreateToken(user.Login)
+	if err != nil {
+		http.Error(res, "Error creating token", http.StatusInternalServerError)
+		return
+	}
+
+	res.Header().Set("Authorization", "Bearer "+token)
+
+	res.WriteHeader(http.StatusOK)
+	fmt.Fprintln(res, "User successfully authenticated")
 }
 
 func (mh *Handler) PostOrderNumber(res http.ResponseWriter, req *http.Request) {
