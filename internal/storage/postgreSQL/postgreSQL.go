@@ -71,3 +71,12 @@ func (s *Storage) GetUser(ctx context.Context, login string) (*models.User, erro
 	}
 	return u, nil
 }
+
+func (s *Storage) AddOrder(ctx context.Context, o *models.Order) error {
+	_, err := s.db.ExecContext(ctx, "INSERT INTO orders (number, user_login, status, accrual, uploaded_at) VALUES ($1, $2, $3, $4, $5)",
+		o.Number, o.UserLogin, o.Status, o.Accrual, o.UploadedAt)
+	if err != nil {
+		return errors.New(`order not added`)
+	}
+	return nil
+}

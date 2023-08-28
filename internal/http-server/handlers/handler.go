@@ -9,6 +9,7 @@ import (
 	"github.com/kholodmv/gophermart/internal/models"
 	"golang.org/x/exp/slog"
 	"net/http"
+	"regexp"
 )
 
 func (mh *Handler) Register(res http.ResponseWriter, req *http.Request) {
@@ -50,26 +51,51 @@ func (mh *Handler) Login(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	user, err := mh.db.GetUser(req.Context(), credentials.Login)
+	_, err = mh.db.GetUser(req.Context(), credentials.Login)
 	if err != nil {
 		http.Error(res, "Invalid username/password pair", http.StatusUnauthorized)
 		return
 	}
 
-	token, err := auth.CreateToken(user.Login)
+	tokenString, err := auth.GenerateToken(credentials.Login)
 	if err != nil {
 		http.Error(res, "Error creating token", http.StatusInternalServerError)
 		return
 	}
 
-	res.Header().Set("Authorization", "Bearer "+token)
+	res.Header().Set("Authorization", tokenString)
 
 	res.WriteHeader(http.StatusOK)
 	fmt.Fprintln(res, "User successfully authenticated")
 }
 
 func (mh *Handler) PostOrderNumber(res http.ResponseWriter, req *http.Request) {
+	var order models.Order
+	decoder := json.NewDecoder(req.Body)
+	err := decoder.Decode(&order)
+	if err != nil {
+		http.Error(res, "Invalid request format", http.StatusBadRequest)
+		return
+	}
 
+	validNumberPattern := regexp.MustCompile("^[0-9]+$")
+	if !validNumberPattern.MatchString(order.Number) {
+		http.Error(res, "Invalid order number format", http.StatusUnprocessableEntity)
+		return
+	}
+
+	if !models.IsValidLuhnNumber(order.Number) {
+		http.Error(res, "Invalid order number format", http.StatusUnprocessableEntity)
+		return
+	}
+	login := auth.GetLogin(req)
+	fullOrder, _ := models.NewOrder(&order, login)
+	err = mh.db.AddOrder(req.Context(), fullOrder)
+	if err != nil {
+
+	}
+	res.WriteHeader(http.StatusAccepted)
+	fmt.Fprintln(res, "New order number accepted for processing")
 }
 
 func (mh *Handler) GetOrderNumbers(res http.ResponseWriter, req *http.Request) {

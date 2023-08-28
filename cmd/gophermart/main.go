@@ -15,8 +15,6 @@ import (
 	"syscall"
 )
 
-var secretKey []byte
-
 func main() {
 	cfg := config.UseServerStartParams()
 

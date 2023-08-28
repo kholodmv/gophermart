@@ -3,6 +3,7 @@ package handlers
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/kholodmv/gophermart/internal/http-server/middleware/auth"
 	"github.com/kholodmv/gophermart/internal/http-server/middleware/gzip"
 	mwLogger "github.com/kholodmv/gophermart/internal/http-server/middleware/logger"
 	"github.com/kholodmv/gophermart/internal/storage"
@@ -34,9 +35,10 @@ func (mh *Handler) RegisterRoutes(router *chi.Mux) {
 
 	router.Post("/api/user/register", mh.Register)
 	router.Post("/api/user/login", mh.Login)
-	router.Post("/api/user/orders", mh.PostOrderNumber)
-	router.Get("/api/user/orders", mh.GetOrderNumbers)
-	router.Get("/api/user/balance", mh.GetBalance)
-	router.Post("/api/user/balance/withdraw", mh.PostWithdrawFromBalance)
-	router.Get("/api/user/withdrawals", mh.GetWithdrawals)
+
+	router.With(auth.AuthenticationMiddleware).Post("/api/user/orders", mh.PostOrderNumber)
+	router.With(auth.AuthenticationMiddleware).Get("/api/user/orders", mh.GetOrderNumbers)
+	router.With(auth.AuthenticationMiddleware).Get("/api/user/balance", mh.GetBalance)
+	router.With(auth.AuthenticationMiddleware).Post("/api/user/balance/withdraw", mh.PostWithdrawFromBalance)
+	router.With(auth.AuthenticationMiddleware).Get("/api/user/withdrawals", mh.GetWithdrawals)
 }
