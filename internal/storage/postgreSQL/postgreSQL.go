@@ -116,3 +116,25 @@ func (s *Storage) GetOrders(ctx context.Context, login string) ([]*models.Order,
 
 	return orders, nil
 }
+
+func (s *Storage) GetAccruals(ctx context.Context, login string) (int64, error) {
+	var accrual sql.NullInt64
+	row := s.db.QueryRowContext(ctx,
+		"SELECT sum(accrual) FROM orders WHERE login = $1", login)
+
+	if err := row.Scan(&accrual); err != nil {
+		return 0, err
+	}
+	return accrual.Int64, nil
+}
+
+func (s *Storage) GetWithdrawn(ctx context.Context, login string) (int64, error) {
+	var withdrawn sql.NullInt64
+	row := s.db.QueryRowContext(ctx,
+		"SELECT sum(sum) FROM withdrawals WHERE user_login = $1", login)
+
+	if err := row.Scan(&withdrawn); err != nil {
+		return 0, err
+	}
+	return withdrawn.Int64, nil
+}

@@ -116,7 +116,25 @@ func (mh *Handler) GetOrderNumbers(res http.ResponseWriter, req *http.Request) {
 }
 
 func (mh *Handler) GetBalance(res http.ResponseWriter, req *http.Request) {
+	login := auth.GetLogin(req)
 
+	currentBalance, err := mh.db.GetAccruals(req.Context(), login)
+	withdrawnPoints, err := mh.db.GetWithdrawn(req.Context(), login)
+
+	user := models.Balance{
+		Current:   currentBalance - withdrawnPoints,
+		Withdrawn: withdrawnPoints,
+	}
+
+	responseJSON, err := json.Marshal(user)
+	if err != nil {
+		http.Error(res, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	res.Header().Set("Content-Type", "application/json")
+	res.WriteHeader(http.StatusOK)
+	res.Write(responseJSON)
 }
 
 func (mh *Handler) PostWithdrawFromBalance(res http.ResponseWriter, req *http.Request) {
