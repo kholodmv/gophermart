@@ -99,7 +99,20 @@ func (mh *Handler) PostOrderNumber(res http.ResponseWriter, req *http.Request) {
 }
 
 func (mh *Handler) GetOrderNumbers(res http.ResponseWriter, req *http.Request) {
+	login := auth.GetLogin(req)
+	orders, err := mh.db.GetOrders(req.Context(), login)
+	if err != nil {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
+	if len(orders) > 0 {
+		res.Header().Set("Content-Type", "application/json")
+		res.WriteHeader(http.StatusOK)
+		json.NewEncoder(res).Encode(orders)
+	} else {
+		res.WriteHeader(http.StatusNoContent)
+	}
 }
 
 func (mh *Handler) GetBalance(res http.ResponseWriter, req *http.Request) {

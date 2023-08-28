@@ -10,4 +10,5 @@ type Storage interface {
 	GetUser(ctx context.Context, login string) (*models.User, error)
 
 	AddOrder(ctx context.Context, o *models.Order) error
+	GetOrders(ctx context.Context, login string) ([]*models.Order, error)
 }

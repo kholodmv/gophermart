@@ -80,3 +80,39 @@ func (s *Storage) AddOrder(ctx context.Context, o *models.Order) error {
 	}
 	return nil
 }
+
+func (s *Storage) GetOrders(ctx context.Context, login string) ([]*models.Order, error) {
+	stmt, err := s.db.Prepare("SELECT number, user_login, status, accrual, uploaded_at FROM orders WHERE user_login = $1 ORDER BY uploaded_at DESC")
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := stmt.QueryContext(ctx, login)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	columns, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+
+	orders := make([]*models.Order, 0, len(columns))
+
+	for rows.Next() {
+		o := &models.Order{}
+		err = rows.Scan(&o.Number, &o.UserLogin, &o.Status, &o.Accrual, &o.UploadedAt)
+		if err != nil {
+			return nil, err
+		}
+		orders = append(orders, o)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return orders, nil
+}
