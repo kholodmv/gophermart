@@ -39,6 +39,13 @@ func (mh *Handler) Register(res http.ResponseWriter, req *http.Request) {
 	}
 	mh.log.Info("User successfully registered")
 
+	tokenString, err := auth.GenerateToken(newUser.Login)
+	if err != nil {
+		http.Error(res, "Error creating token", http.StatusInternalServerError)
+		return
+	}
+
+	res.Header().Set("Authorization", tokenString)
 	res.WriteHeader(http.StatusOK)
 	fmt.Fprintln(res, "User successfully registered and authenticated")
 }

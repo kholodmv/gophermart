@@ -21,7 +21,7 @@ func main() {
 	log := logger.SetupLogger(cfg.Env)
 	log = log.With(slog.String("env", cfg.Env))
 
-	db, err := postgreSQL.New(cfg.DatabaseUri)
+	db, err := postgreSQL.New(cfg.DatabaseURI)
 	if err != nil {
 		log.Error("failed to initialize storage", sl.Err(err))
 	}
