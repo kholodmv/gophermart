@@ -10,6 +10,7 @@ import (
 	"golang.org/x/exp/slog"
 	"net/http"
 	"regexp"
+	"time"
 )
 
 func (mh *Handler) Register(res http.ResponseWriter, req *http.Request) {
@@ -121,12 +122,12 @@ func (mh *Handler) GetBalance(res http.ResponseWriter, req *http.Request) {
 	currentBalance, err := mh.db.GetAccruals(req.Context(), login)
 	withdrawnPoints, err := mh.db.GetWithdrawn(req.Context(), login)
 
-	user := models.Balance{
+	balance := models.Balance{
 		Current:   currentBalance - withdrawnPoints,
 		Withdrawn: withdrawnPoints,
 	}
 
-	responseJSON, err := json.Marshal(user)
+	responseJSON, err := json.Marshal(balance)
 	if err != nil {
 		http.Error(res, "Internal Server Error", http.StatusInternalServerError)
 		return
@@ -138,7 +139,40 @@ func (mh *Handler) GetBalance(res http.ResponseWriter, req *http.Request) {
 }
 
 func (mh *Handler) PostWithdrawFromBalance(res http.ResponseWriter, req *http.Request) {
+	var wd models.Withdraw
+	if err := json.NewDecoder(req.Body).Decode(&wd); err != nil {
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
+	login := auth.GetLogin(req)
+	wd.User = login
+	createdTime := time.Now()
+	wd.ProcessedAt = &createdTime
+
+	currentBalance, _ := mh.db.GetAccruals(req.Context(), login)
+	withdrawnPoints, _ := mh.db.GetWithdrawn(req.Context(), login)
+
+	balance := models.Balance{
+		Current:   currentBalance - withdrawnPoints,
+		Withdrawn: withdrawnPoints,
+	}
+	if wd.Sum > balance.Current {
+		http.Error(res, "there are not enough funds on the account", http.StatusPaymentRequired)
+		return
+	}
+
+	err := mh.db.AddWithdrawal(req.Context(), &wd)
+	if err != nil {
+		http.Error(res, "statusConflict", http.StatusConflict)
+	}
+
+	if !models.IsValidLuhnNumber(wd.Order) {
+		http.Error(res, "Invalid order number format", http.StatusUnprocessableEntity)
+		return
+	}
+
+	res.WriteHeader(http.StatusOK)
 }
 
 func (mh *Handler) GetWithdrawals(res http.ResponseWriter, req *http.Request) {

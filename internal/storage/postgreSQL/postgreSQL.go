@@ -138,3 +138,12 @@ func (s *Storage) GetWithdrawn(ctx context.Context, login string) (int64, error)
 	}
 	return withdrawn.Int64, nil
 }
+
+func (s *Storage) AddWithdrawal(ctx context.Context, wd *models.Withdraw) error {
+	_, err := s.db.ExecContext(ctx, "INSERT INTO withdrawals (order_number, user_login, sum, processed_at) VALUES ($1, $2, $3, $4)",
+		wd.Order, wd.User, wd.Sum, wd.ProcessedAt)
+	if err != nil {
+		return errors.New(`order not added`)
+	}
+	return nil
+}
