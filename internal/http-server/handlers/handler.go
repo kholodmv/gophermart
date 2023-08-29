@@ -176,5 +176,26 @@ func (mh *Handler) PostWithdrawFromBalance(res http.ResponseWriter, req *http.Re
 }
 
 func (mh *Handler) GetWithdrawals(res http.ResponseWriter, req *http.Request) {
+	login := auth.GetLogin(req)
 
+	withdrawals, err := mh.db.GetWithdrawals(req.Context(), login)
+	if err != nil {
+		//http.Error(res, "StatusInternalServerError", http.StatusInternalServerError)
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	/*if len(withdrawals) == 0 {
+		//http.Error(res, "StatusNoContent", http.StatusNoContent)
+		res.WriteHeader(http.StatusNoContent)
+		return
+	}*/
+	//return c.JSON(http.StatusOK, withdrawals)
+
+	res.Header().Set("Content-Type", "application/json")
+	if len(withdrawals) == 0 {
+		res.WriteHeader(http.StatusNoContent)
+	} else {
+		res.WriteHeader(http.StatusOK)
+		json.NewEncoder(res).Encode(withdrawals)
+	}
 }

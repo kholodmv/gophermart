@@ -147,3 +147,39 @@ func (s *Storage) AddWithdrawal(ctx context.Context, wd *models.Withdraw) error 
 	}
 	return nil
 }
+
+func (s *Storage) GetWithdrawals(ctx context.Context, login string) ([]*models.Withdraw, error) {
+	stmt, err := s.db.Prepare("SELECT order_number, user_login, sum, processed_at FROM withdrawals WHERE user_login=$1 ORDER BY processed_at DESC")
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := stmt.QueryContext(ctx, login)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	columns, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+
+	withdrawals := make([]*models.Withdraw, 0, len(columns))
+
+	for rows.Next() {
+		w := &models.Withdraw{}
+		err = rows.Scan(&w.Order, &w.User, &w.Sum, &w.ProcessedAt)
+		if err != nil {
+			return nil, err
+		}
+		withdrawals = append(withdrawals, w)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return withdrawals, nil
+}

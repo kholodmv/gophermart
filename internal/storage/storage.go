@@ -16,4 +16,5 @@ type Storage interface {
 
 	GetWithdrawn(ctx context.Context, login string) (int64, error)
 	AddWithdrawal(ctx context.Context, wd *models.Withdraw) error
+	GetWithdrawals(ctx context.Context, login string) ([]*models.Withdraw, error)
 }
