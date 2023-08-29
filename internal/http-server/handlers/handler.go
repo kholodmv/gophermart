@@ -8,6 +8,7 @@ import (
 	"github.com/kholodmv/gophermart/internal/auth"
 	"github.com/kholodmv/gophermart/internal/logger/sl"
 	"github.com/kholodmv/gophermart/internal/models"
+	"github.com/kholodmv/gophermart/internal/storage/postgresql"
 	"golang.org/x/exp/slog"
 	"net/http"
 	"regexp"
@@ -102,13 +103,14 @@ func (mh *Handler) PostOrderNumber(res http.ResponseWriter, req *http.Request) {
 	err = mh.db.AddOrder(req.Context(), fullOrder)
 	if err != nil {
 		switch {
-		case errors.Is(err, errors.New(`order number is taken by this user`)):
+		case errors.Is(err, postgresql.ErrorOrderAdded):
 			res.WriteHeader(http.StatusOK)
-		case errors.Is(err, errors.New(`order number is taken by another user`)):
+		case errors.Is(err, postgresql.ErrorOrderExist):
 			res.WriteHeader(http.StatusConflict)
 		}
+	} else {
+		res.WriteHeader(http.StatusAccepted)
 	}
-	res.WriteHeader(http.StatusAccepted)
 	fmt.Fprintln(res, "New order number accepted for processing")
 }
 

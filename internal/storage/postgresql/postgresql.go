@@ -5,8 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5/pgconn"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/kholodmv/gophermart/internal/models"
 )
 
@@ -33,6 +32,12 @@ const tableWithdrawals = `
 	    user_login VARCHAR(256) NOT NULL,
 		sum INT NOT NULL,
 		processed_at TIMESTAMP NOT NULL);`
+
+var (
+	ErrorNotFound   = errors.New(`can not get order by number`)
+	ErrorOrderAdded = errors.New(`order number added yet by this user`)
+	ErrorOrderExist = errors.New(`order number added yet by another user`)
+)
 
 func New(storagePath string) (*Storage, error) {
 	const op = "storage.postgresql.NewStorage"
@@ -88,18 +93,15 @@ func (s *Storage) AddOrder(ctx context.Context, o *models.Order) error {
 		o.UploadedAt,
 	)
 	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.SQLState()) {
-			existOrder, err := s.GetOrder(ctx, o.Number)
-			if err != nil {
-				return fmt.Errorf("%s: %w", `can not get order`, err)
-			}
-			if existOrder.UserLogin == o.UserLogin {
-				return errors.New(`order number is taken by this user`)
-			}
-			return errors.New(`order number is taken by another user`)
+		existOrder, err := s.GetOrder(ctx, o.Number)
+		if err != nil {
+			return ErrorNotFound
 		}
-		return fmt.Errorf("%s: %s", errors.New(`can not get order`), pgErr.Code)
+		if existOrder.UserLogin == o.UserLogin {
+			return ErrorOrderAdded
+		} else {
+			return ErrorOrderExist
+		}
 	}
 	return nil
 }
