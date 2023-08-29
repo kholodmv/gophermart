@@ -1,4 +1,4 @@
-package postgreSQL
+package postgresql
 
 import (
 	"context"
@@ -35,7 +35,7 @@ const tableWithdrawals = `
 		processed_at TIMESTAMP NOT NULL);`
 
 func New(storagePath string) (*Storage, error) {
-	const op = "storage.postgreSQL.NewStorage"
+	const op = "storage.postgresql.NewStorage"
 
 	db, err := sql.Open("postgres", storagePath)
 	if err != nil {
@@ -95,9 +95,9 @@ func (s *Storage) AddOrder(ctx context.Context, o *models.Order) error {
 				return fmt.Errorf("%s: %w", `can not get order`, err)
 			}
 			if existOrder.UserLogin == o.UserLogin {
-				return errors.New(`order is exist`)
+				return errors.New(`order number is taken by this user`)
 			}
-			return errors.New(`can not get order`)
+			return errors.New(`order number is taken by another user`)
 		}
 		return fmt.Errorf("%s: %s", errors.New(`can not get order`), pgErr.Code)
 	}

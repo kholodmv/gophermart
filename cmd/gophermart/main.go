@@ -6,7 +6,7 @@ import (
 	"github.com/kholodmv/gophermart/internal/http-server/handlers"
 	"github.com/kholodmv/gophermart/internal/logger"
 	"github.com/kholodmv/gophermart/internal/logger/sl"
-	"github.com/kholodmv/gophermart/internal/storage/postgreSQL"
+	"github.com/kholodmv/gophermart/internal/storage/postgresql"
 	_ "github.com/lib/pq"
 	"golang.org/x/exp/slog"
 	"net/http"
@@ -21,7 +21,7 @@ func main() {
 	log := logger.SetupLogger(cfg.Env)
 	log = log.With(slog.String("env", cfg.Env))
 
-	db, err := postgreSQL.New(cfg.DatabaseURI)
+	db, err := postgresql.New(cfg.DatabaseURI)
 	if err != nil {
 		log.Error("failed to initialize storage", sl.Err(err))
 	}

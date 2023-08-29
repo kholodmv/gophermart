@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/kholodmv/gophermart/internal/auth"
@@ -100,8 +101,12 @@ func (mh *Handler) PostOrderNumber(res http.ResponseWriter, req *http.Request) {
 	fullOrder, _ := models.NewOrder(&order, login)
 	err = mh.db.AddOrder(req.Context(), fullOrder)
 	if err != nil {
-		res.WriteHeader(http.StatusInternalServerError)
-		return
+		switch {
+		case errors.Is(err, errors.New(`order number is taken by this user`)):
+			res.WriteHeader(http.StatusOK)
+		case errors.Is(err, errors.New(`order number is taken by another user`)):
+			res.WriteHeader(http.StatusConflict)
+		}
 	}
 	res.WriteHeader(http.StatusAccepted)
 	fmt.Fprintln(res, "New order number accepted for processing")
