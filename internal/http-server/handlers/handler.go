@@ -30,7 +30,7 @@ func (mh *Handler) Register(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	hashUser, err := newUser.GenerateHashPassword()
+	hashUser, _ := newUser.GenerateHashPassword()
 	err = mh.db.AddUser(req.Context(), hashUser)
 	if err != nil {
 		mh.log.Error("New user has not been register", sl.Err(err))
@@ -100,7 +100,8 @@ func (mh *Handler) PostOrderNumber(res http.ResponseWriter, req *http.Request) {
 	fullOrder, _ := models.NewOrder(&order, login)
 	err = mh.db.AddOrder(req.Context(), fullOrder)
 	if err != nil {
-
+		res.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 	res.WriteHeader(http.StatusAccepted)
 	fmt.Fprintln(res, "New order number accepted for processing")
@@ -126,8 +127,8 @@ func (mh *Handler) GetOrderNumbers(res http.ResponseWriter, req *http.Request) {
 func (mh *Handler) GetBalance(res http.ResponseWriter, req *http.Request) {
 	login := auth.GetLogin(req)
 
-	currentBalance, err := mh.db.GetAccruals(req.Context(), login)
-	withdrawnPoints, err := mh.db.GetWithdrawn(req.Context(), login)
+	currentBalance, _ := mh.db.GetAccruals(req.Context(), login)
+	withdrawnPoints, _ := mh.db.GetWithdrawn(req.Context(), login)
 
 	balance := models.Balance{
 		Current:   currentBalance - withdrawnPoints,
@@ -165,6 +166,7 @@ func (mh *Handler) PostWithdrawFromBalance(res http.ResponseWriter, req *http.Re
 		Withdrawn: withdrawnPoints,
 	}
 	if wd.Sum > balance.Current {
+		fmt.Println(balance.Withdrawn)
 		http.Error(res, "there are not enough funds on the account", http.StatusPaymentRequired)
 		return
 	}

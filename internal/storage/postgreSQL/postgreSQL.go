@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/kholodmv/gophermart/internal/models"
 )
 
@@ -73,12 +75,50 @@ func (s *Storage) GetUser(ctx context.Context, login string) (*models.User, erro
 }
 
 func (s *Storage) AddOrder(ctx context.Context, o *models.Order) error {
-	_, err := s.db.ExecContext(ctx, "INSERT INTO orders (number, user_login, status, accrual, uploaded_at) VALUES ($1, $2, $3, $4, $5)",
-		o.Number, o.UserLogin, o.Status, o.Accrual, o.UploadedAt)
+	stmt, err := s.db.Prepare("INSERT INTO orders(number, user_login, status, accrual, uploaded_at) values($1,$2,$3,$4,$5)")
 	if err != nil {
-		return errors.New(`order not added`)
+		return err
+	}
+	_, err = stmt.ExecContext(
+		ctx,
+		o.Number,
+		o.UserLogin,
+		o.Status,
+		o.Accrual,
+		o.UploadedAt,
+	)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.SQLState()) {
+			existOrder, err := s.GetOrder(ctx, o.Number)
+			if err != nil {
+				return fmt.Errorf("%s: %w", `can not get order`, err)
+			}
+			if existOrder.UserLogin == o.UserLogin {
+				return errors.New(`order is exist`)
+			}
+			return errors.New(`can not get order`)
+		}
+		return fmt.Errorf("%s: %s", errors.New(`can not get order`), pgErr.Code)
 	}
 	return nil
+}
+
+func (s *Storage) GetOrder(ctx context.Context, number string) (*models.Order, error) {
+	stmt, err := s.db.Prepare("SELECT number, user_login, status, accrual, uploaded_at FROM orders WHERE number=$1")
+	if err != nil {
+		return nil, err
+	}
+	o := &models.Order{}
+	row := stmt.QueryRowContext(ctx, number)
+	err = row.Scan(&o.Number, &o.UserLogin, &o.Status, &o.Accrual, &o.UploadedAt)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errors.New("order not found")
+		}
+		return nil, fmt.Errorf("%s: %w", errors.New("can't get order"), err)
+	}
+	return o, nil
 }
 
 func (s *Storage) GetOrders(ctx context.Context, login string) ([]*models.Order, error) {
