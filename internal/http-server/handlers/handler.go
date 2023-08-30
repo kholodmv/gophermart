@@ -117,7 +117,7 @@ func (mh *Handler) PostOrderNumber(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 	}
-	res.WriteHeader(http.StatusOK)
+	res.WriteHeader(http.StatusAccepted)
 	fmt.Fprintln(res, "New order number accepted for processing")
 }
 
