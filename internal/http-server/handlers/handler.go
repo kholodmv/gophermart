@@ -99,18 +99,25 @@ func (mh *Handler) PostOrderNumber(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	login := auth.GetLogin(req)
-	fullOrder, _ := models.NewOrder(&order, login)
+	fullOrder := models.NewOrder(&order, login)
 	err = mh.db.AddOrder(req.Context(), fullOrder)
 	if err != nil {
 		switch {
 		case errors.Is(err, postgresql.ErrorOrderAdded):
 			res.WriteHeader(http.StatusOK)
+			fmt.Fprintln(res, "The order number has already been added by this user")
+			return
 		case errors.Is(err, postgresql.ErrorOrderExist):
 			res.WriteHeader(http.StatusConflict)
+			fmt.Fprintln(res, "The order number has already been added by another user")
+			return
+		default:
+			res.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintln(res, "Error adding order number")
+			return
 		}
-	} else {
-		res.WriteHeader(http.StatusAccepted)
 	}
+	res.WriteHeader(http.StatusAccepted)
 	fmt.Fprintln(res, "New order number accepted for processing")
 }
 

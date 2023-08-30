@@ -19,14 +19,15 @@ const (
 	StatusProcessed  Status = "PROCESSED"
 )
 
-func NewOrder(order *Order, login string) (*Order, error) {
+func NewOrder(order *Order, login string) *Order {
 	createTime := time.Now()
+
 	order.UserLogin = login
 	order.Status = StatusNew
 	order.Accrual = nil
 	order.UploadedAt = &createTime
 
-	return order, nil
+	return order
 }
 
 func IsValidLuhnNumber(number string) bool {
