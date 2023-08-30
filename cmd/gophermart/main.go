@@ -29,7 +29,7 @@ func main() {
 	router := chi.NewRouter()
 
 	handler := handlers.NewHandler(router, log, db)
-	handler.RegisterRoutes(router)
+	handler.RegisterRoutes()
 
 	log.Info("initializing server", slog.String("address", cfg.RunAddress))
 

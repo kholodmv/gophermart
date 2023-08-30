@@ -26,19 +26,23 @@ func NewHandler(router chi.Router, log *slog.Logger, db storage.Storage) *Handle
 	return h
 }
 
-func (mh *Handler) RegisterRoutes(router *chi.Mux) {
+func (mh *Handler) RegisterRoutes() {
 	mh.router.Use(middleware.RequestID)
 	mh.router.Use(mwLogger.New(mh.log))
 	mh.router.Use(middleware.Recoverer)
 	mh.router.Use(middleware.URLFormat)
 	mh.router.Use(gzip.GzipHandler)
 
-	router.Post("/api/user/register", mh.Register)
-	router.Post("/api/user/login", mh.Login)
+	mh.router.Post("/api/user/register", mh.Register)
+	mh.router.Post("/api/user/login", mh.Login)
 
-	router.With(auth.AuthenticationMiddleware).Post("/api/user/orders", mh.PostOrderNumber)
-	router.With(auth.AuthenticationMiddleware).Get("/api/user/orders", mh.GetOrderNumbers)
-	router.With(auth.AuthenticationMiddleware).Get("/api/user/balance", mh.GetBalance)
-	router.With(auth.AuthenticationMiddleware).Post("/api/user/balance/withdraw", mh.PostWithdrawFromBalance)
-	router.With(auth.AuthenticationMiddleware).Get("/api/user/withdrawals", mh.GetWithdrawals)
+	mh.router.Group(func(r chi.Router) {
+		r.Use(auth.AuthenticationMiddleware)
+
+		r.Post("/api/user/orders", mh.PostOrderNumber)
+		r.Get("/api/user/orders", mh.GetOrderNumbers)
+		r.Get("/api/user/balance", mh.GetBalance)
+		r.Post("/api/user/balance/withdraw", mh.PostWithdrawFromBalance)
+		r.Get("/api/user/withdrawals", mh.GetWithdrawals)
+	})
 }
