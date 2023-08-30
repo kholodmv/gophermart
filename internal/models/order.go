@@ -13,10 +13,6 @@ type Order struct {
 	UploadedAt *time.Time `json:"uploaded_at"`
 }
 
-type OrderNumber struct {
-	Number int64 `json:"number"`
-}
-
 type Status string
 
 const (

@@ -82,7 +82,7 @@ func (mh *Handler) Login(res http.ResponseWriter, req *http.Request) {
 }
 
 func (mh *Handler) PostOrderNumber(res http.ResponseWriter, req *http.Request) {
-	var number models.OrderNumber
+	var number int64
 	decoder := json.NewDecoder(req.Body)
 	err := decoder.Decode(&number)
 	if err != nil {
@@ -91,18 +91,18 @@ func (mh *Handler) PostOrderNumber(res http.ResponseWriter, req *http.Request) {
 	}
 
 	validNumberPattern := regexp.MustCompile("^[0-9]+$")
-	if !validNumberPattern.MatchString(strconv.FormatInt(number.Number, 2)) {
+	if !validNumberPattern.MatchString(strconv.FormatInt(number, 2)) {
 		http.Error(res, "Invalid order number format", http.StatusUnprocessableEntity)
 		return
 	}
 
-	if !models.IsValidLuhnNumber(strconv.FormatInt(number.Number, 2)) {
+	if !models.IsValidLuhnNumber(strconv.FormatInt(number, 2)) {
 		http.Error(res, "Invalid order number format", http.StatusUnprocessableEntity)
 		return
 	}
 	login := auth.GetLogin(req)
 	var order models.Order
-	fullOrder := models.NewOrder(&order, login, number.Number)
+	fullOrder := models.NewOrder(&order, login, number)
 	err = mh.db.AddOrder(req.Context(), fullOrder)
 	if err != nil {
 		switch {
