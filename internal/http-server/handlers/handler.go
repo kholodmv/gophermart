@@ -47,7 +47,7 @@ func (mh *Handler) Register(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	res.Header().Set("Authorization", tokenString)
+	res.Header().Set("Authorization", "Bearer "+tokenString)
 	mh.log.Error("tokenString is: " + tokenString)
 	res.WriteHeader(http.StatusOK)
 	fmt.Fprintln(res, "User successfully registered and authenticated")
@@ -74,7 +74,7 @@ func (mh *Handler) Login(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	res.Header().Set("Authorization", tokenString)
+	res.Header().Set("Authorization", "Bearer "+tokenString)
 
 	res.WriteHeader(http.StatusOK)
 	fmt.Fprintln(res, "User successfully authenticated")
