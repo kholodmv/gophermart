@@ -104,7 +104,7 @@ func (mh *Handler) PostOrderNumber(res http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, postgresql.ErrorOrderAdded):
-			res.WriteHeader(http.StatusOK)
+			res.WriteHeader(http.StatusAccepted)
 			fmt.Fprintln(res, "The order number has already been added by this user")
 			return
 		case errors.Is(err, postgresql.ErrorOrderExist):
@@ -117,7 +117,7 @@ func (mh *Handler) PostOrderNumber(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 	}
-	res.WriteHeader(http.StatusAccepted)
+	res.WriteHeader(http.StatusOK)
 	fmt.Fprintln(res, "New order number accepted for processing")
 }
 
