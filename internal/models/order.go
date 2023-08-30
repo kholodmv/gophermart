@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"strconv"
+	"time"
+)
 
 type Order struct {
 	UserLogin  string     `json:"-"`
@@ -8,6 +11,10 @@ type Order struct {
 	Status     Status     `json:"status"`
 	Accrual    *int64     `json:"accrual,omitempty"`
 	UploadedAt *time.Time `json:"uploaded_at"`
+}
+
+type OrderNumber struct {
+	Number int64 `json:"number"`
 }
 
 type Status string
@@ -19,9 +26,10 @@ const (
 	StatusProcessed  Status = "PROCESSED"
 )
 
-func NewOrder(order *Order, login string) *Order {
+func NewOrder(order *Order, login string, number int64) *Order {
 	createTime := time.Now()
 
+	order.Number = strconv.FormatInt(number, 2)
 	order.UserLogin = login
 	order.Status = StatusNew
 	order.Accrual = nil

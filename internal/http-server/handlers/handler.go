@@ -12,6 +12,7 @@ import (
 	"golang.org/x/exp/slog"
 	"net/http"
 	"regexp"
+	"strconv"
 	"time"
 )
 
@@ -81,26 +82,27 @@ func (mh *Handler) Login(res http.ResponseWriter, req *http.Request) {
 }
 
 func (mh *Handler) PostOrderNumber(res http.ResponseWriter, req *http.Request) {
-	var order models.Order
+	var number models.OrderNumber
 	decoder := json.NewDecoder(req.Body)
-	err := decoder.Decode(&order)
+	err := decoder.Decode(&number)
 	if err != nil {
 		http.Error(res, "Invalid request format", http.StatusBadRequest)
 		return
 	}
 
 	validNumberPattern := regexp.MustCompile("^[0-9]+$")
-	if !validNumberPattern.MatchString(order.Number) {
+	if !validNumberPattern.MatchString(strconv.FormatInt(number.Number, 2)) {
 		http.Error(res, "Invalid order number format", http.StatusUnprocessableEntity)
 		return
 	}
 
-	if !models.IsValidLuhnNumber(order.Number) {
+	if !models.IsValidLuhnNumber(strconv.FormatInt(number.Number, 2)) {
 		http.Error(res, "Invalid order number format", http.StatusUnprocessableEntity)
 		return
 	}
 	login := auth.GetLogin(req)
-	fullOrder := models.NewOrder(&order, login)
+	var order models.Order
+	fullOrder := models.NewOrder(&order, login, number.Number)
 	err = mh.db.AddOrder(req.Context(), fullOrder)
 	if err != nil {
 		switch {
