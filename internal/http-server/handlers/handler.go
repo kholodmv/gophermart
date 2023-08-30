@@ -2,14 +2,16 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/kholodmv/gophermart/internal/auth"
 	"github.com/kholodmv/gophermart/internal/logger/sl"
 	"github.com/kholodmv/gophermart/internal/models"
+	"github.com/kholodmv/gophermart/internal/storage/postgresql"
 	"golang.org/x/exp/slog"
-	"log"
 	"net/http"
+	"regexp"
 	"time"
 )
 
@@ -78,7 +80,7 @@ func (mh *Handler) Login(res http.ResponseWriter, req *http.Request) {
 }
 
 func (mh *Handler) PostOrderNumber(res http.ResponseWriter, req *http.Request) {
-	/*var order models.Order
+	var order models.Order
 	decoder := json.NewDecoder(req.Body)
 	err := decoder.Decode(&order)
 	if err != nil {
@@ -114,10 +116,9 @@ func (mh *Handler) PostOrderNumber(res http.ResponseWriter, req *http.Request) {
 			fmt.Fprintln(res, "Error adding order number")
 			return
 		}
-	}*/
-	res.WriteHeader(http.StatusInternalServerError)
-	//fmt.Fprintln(res, "New order number accepted for processing")
-	log.Println("KEKEKEKEKEKEKEKEKEKEK")
+	}
+	res.WriteHeader(http.StatusAccepted)
+	fmt.Fprintln(res, "New order number accepted for processing")
 }
 
 func (mh *Handler) GetOrderNumbers(res http.ResponseWriter, req *http.Request) {
