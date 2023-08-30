@@ -48,6 +48,7 @@ func (mh *Handler) Register(res http.ResponseWriter, req *http.Request) {
 	}
 
 	res.Header().Set("Authorization", tokenString)
+	mh.log.Error("tokenString is: " + tokenString)
 	res.WriteHeader(http.StatusOK)
 	fmt.Fprintln(res, "User successfully registered and authenticated")
 }
