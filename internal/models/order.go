@@ -25,7 +25,7 @@ const (
 func NewOrder(order *Order, login string, number int64) *Order {
 	createTime := time.Now()
 
-	order.Number = strconv.FormatInt(number, 2)
+	order.Number = strconv.FormatInt(number, 10)
 	order.UserLogin = login
 	order.Status = StatusNew
 	order.Accrual = nil

@@ -91,12 +91,12 @@ func (mh *Handler) PostOrderNumber(res http.ResponseWriter, req *http.Request) {
 	}
 
 	validNumberPattern := regexp.MustCompile("^[0-9]+$")
-	if !validNumberPattern.MatchString(strconv.FormatInt(number, 2)) {
+	if !validNumberPattern.MatchString(strconv.FormatInt(number, 10)) {
 		http.Error(res, "Invalid order number format", http.StatusUnprocessableEntity)
 		return
 	}
 
-	if !models.IsValidLuhnNumber(strconv.FormatInt(number, 2)) {
+	if !models.IsValidLuhnNumber(strconv.FormatInt(number, 10)) {
 		http.Error(res, "Invalid order number format", http.StatusUnprocessableEntity)
 		return
 	}
