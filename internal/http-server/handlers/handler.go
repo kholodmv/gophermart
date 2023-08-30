@@ -2,16 +2,14 @@ package handlers
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/kholodmv/gophermart/internal/auth"
 	"github.com/kholodmv/gophermart/internal/logger/sl"
 	"github.com/kholodmv/gophermart/internal/models"
-	"github.com/kholodmv/gophermart/internal/storage/postgresql"
 	"golang.org/x/exp/slog"
+	"log"
 	"net/http"
-	"regexp"
 	"time"
 )
 
@@ -80,7 +78,7 @@ func (mh *Handler) Login(res http.ResponseWriter, req *http.Request) {
 }
 
 func (mh *Handler) PostOrderNumber(res http.ResponseWriter, req *http.Request) {
-	var order models.Order
+	/*var order models.Order
 	decoder := json.NewDecoder(req.Body)
 	err := decoder.Decode(&order)
 	if err != nil {
@@ -104,7 +102,7 @@ func (mh *Handler) PostOrderNumber(res http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, postgresql.ErrorOrderAdded):
-			res.WriteHeader(http.StatusAccepted)
+			res.WriteHeader(http.StatusOK)
 			fmt.Fprintln(res, "The order number has already been added by this user")
 			return
 		case errors.Is(err, postgresql.ErrorOrderExist):
@@ -116,9 +114,10 @@ func (mh *Handler) PostOrderNumber(res http.ResponseWriter, req *http.Request) {
 			fmt.Fprintln(res, "Error adding order number")
 			return
 		}
-	}
-	res.WriteHeader(http.StatusAccepted)
-	fmt.Fprintln(res, "New order number accepted for processing")
+	}*/
+	res.WriteHeader(http.StatusInternalServerError)
+	//fmt.Fprintln(res, "New order number accepted for processing")
+	log.Println("KEKEKEKEKEKEKEKEKEKEK")
 }
 
 func (mh *Handler) GetOrderNumbers(res http.ResponseWriter, req *http.Request) {
