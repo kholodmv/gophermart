@@ -6,11 +6,15 @@ import (
 	"errors"
 	"fmt"
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/kholodmv/gophermart/internal/models"
+	"github.com/kholodmv/gophermart/internal/models/order"
+	"github.com/kholodmv/gophermart/internal/models/user"
+	"github.com/kholodmv/gophermart/internal/models/withdraw"
+	"golang.org/x/exp/slog"
 )
 
 type Storage struct {
-	db *sql.DB
+	db  *sql.DB
+	log *slog.Logger
 }
 
 const tableUser = `
@@ -40,7 +44,7 @@ var (
 )
 
 func New(storagePath string) (*Storage, error) {
-	const op = "storage.postgresql.NewStorage"
+	const op = "storage.postgresql.New"
 
 	db, err := sql.Open("postgres", storagePath)
 	if err != nil {
@@ -60,7 +64,7 @@ func New(storagePath string) (*Storage, error) {
 	return &Storage{db: db}, nil
 }
 
-func (s *Storage) AddUser(ctx context.Context, u *models.User) error {
+func (s *Storage) AddUser(ctx context.Context, u *user.User) error {
 	_, err := s.db.ExecContext(ctx, "INSERT INTO users (login, pass_hash) VALUES ($1, $2)", u.Login, u.HashPassword)
 	if err != nil {
 		return errors.New(`user is exist`)
@@ -68,8 +72,8 @@ func (s *Storage) AddUser(ctx context.Context, u *models.User) error {
 	return nil
 }
 
-func (s *Storage) GetUser(ctx context.Context, login string) (*models.User, error) {
-	u := new(models.User)
+func (s *Storage) GetUser(ctx context.Context, login string) (*user.User, error) {
+	u := new(user.User)
 	row := s.db.QueryRowContext(ctx,
 		"SELECT login, pass_hash FROM users WHERE login = $1", login)
 
@@ -79,7 +83,7 @@ func (s *Storage) GetUser(ctx context.Context, login string) (*models.User, erro
 	return u, nil
 }
 
-func (s *Storage) AddOrder(ctx context.Context, o *models.Order) error {
+func (s *Storage) AddOrder(ctx context.Context, o *order.Order) error {
 	stmt, err := s.db.Prepare("INSERT INTO orders(number, user_login, status, accrual, uploaded_at) values($1,$2,$3,$4,$5)")
 	if err != nil {
 		return err
@@ -106,12 +110,12 @@ func (s *Storage) AddOrder(ctx context.Context, o *models.Order) error {
 	return nil
 }
 
-func (s *Storage) GetOrder(ctx context.Context, number string) (*models.Order, error) {
+func (s *Storage) GetOrder(ctx context.Context, number order.Number) (*order.Order, error) {
 	stmt, err := s.db.Prepare("SELECT number, user_login, status, accrual, uploaded_at FROM orders WHERE number=$1")
 	if err != nil {
 		return nil, err
 	}
-	o := &models.Order{}
+	o := &order.Order{}
 	row := stmt.QueryRowContext(ctx, number)
 	err = row.Scan(&o.Number, &o.UserLogin, &o.Status, &o.Accrual, &o.UploadedAt)
 	if err != nil {
@@ -123,7 +127,7 @@ func (s *Storage) GetOrder(ctx context.Context, number string) (*models.Order, e
 	return o, nil
 }
 
-func (s *Storage) GetOrders(ctx context.Context, login string) ([]*models.Order, error) {
+func (s *Storage) GetOrders(ctx context.Context, login string) ([]*order.Order, error) {
 	stmt, err := s.db.Prepare("SELECT number, user_login, status, accrual, uploaded_at FROM orders WHERE user_login = $1 ORDER BY uploaded_at DESC")
 	if err != nil {
 		return nil, err
@@ -140,10 +144,10 @@ func (s *Storage) GetOrders(ctx context.Context, login string) ([]*models.Order,
 		return nil, err
 	}
 
-	orders := make([]*models.Order, 0, len(columns))
+	orders := make([]*order.Order, 0, len(columns))
 
 	for rows.Next() {
-		o := &models.Order{}
+		o := &order.Order{}
 		err = rows.Scan(&o.Number, &o.UserLogin, &o.Status, &o.Accrual, &o.UploadedAt)
 		if err != nil {
 			return nil, err
@@ -157,6 +161,59 @@ func (s *Storage) GetOrders(ctx context.Context, login string) ([]*models.Order,
 	}
 
 	return orders, nil
+}
+
+func (s *Storage) GetOrderStatus(ctx context.Context, status order.Status) ([]order.Number, error) {
+	stmt, err := s.db.Prepare("SELECT number FROM orders WHERE status=$1 ORDER BY uploaded_at")
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := stmt.QueryContext(ctx, &status)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	columns, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+
+	orders := make([]order.Number, 0, len(columns))
+
+	for rows.Next() {
+		var o order.Order
+		err = rows.Scan(&o.Number)
+		if err != nil {
+			return nil, err
+		}
+		orders = append(orders, o.Number)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return orders, nil
+}
+
+func (s *Storage) UpdateOrder(ctx context.Context, o *order.Order) error {
+	stmt, err := s.db.Prepare("UPDATE orders SET status=$1, accrual=$2 WHERE number=$3")
+	if err != nil {
+		return err
+	}
+	_, err = stmt.ExecContext(ctx,
+		o.Status,
+		o.Accrual,
+		o.Number,
+	)
+	if err != nil {
+		//logger.Logger.Error(err)
+		//return fmt.Errorf("%s: %w", db.ErrSomeWrong, err)
+	}
+	return nil
 }
 
 func (s *Storage) GetAccruals(ctx context.Context, login string) (int64, error) {
@@ -181,7 +238,7 @@ func (s *Storage) GetWithdrawn(ctx context.Context, login string) (int64, error)
 	return withdrawn.Int64, nil
 }
 
-func (s *Storage) AddWithdrawal(ctx context.Context, wd *models.Withdraw) error {
+func (s *Storage) AddWithdrawal(ctx context.Context, wd *withdraw.Withdraw) error {
 	_, err := s.db.ExecContext(ctx, "INSERT INTO withdrawals (order_number, user_login, sum, processed_at) VALUES ($1, $2, $3, $4)",
 		wd.Order, wd.User, wd.Sum, wd.ProcessedAt)
 	if err != nil {
@@ -190,7 +247,7 @@ func (s *Storage) AddWithdrawal(ctx context.Context, wd *models.Withdraw) error 
 	return nil
 }
 
-func (s *Storage) GetWithdrawals(ctx context.Context, login string) ([]*models.Withdraw, error) {
+func (s *Storage) GetWithdrawals(ctx context.Context, login string) ([]*withdraw.Withdraw, error) {
 	stmt, err := s.db.Prepare("SELECT order_number, user_login, sum, processed_at FROM withdrawals WHERE user_login=$1 ORDER BY processed_at DESC")
 	if err != nil {
 		return nil, err
@@ -207,10 +264,10 @@ func (s *Storage) GetWithdrawals(ctx context.Context, login string) ([]*models.W
 		return nil, err
 	}
 
-	withdrawals := make([]*models.Withdraw, 0, len(columns))
+	withdrawals := make([]*withdraw.Withdraw, 0, len(columns))
 
 	for rows.Next() {
-		w := &models.Withdraw{}
+		w := &withdraw.Withdraw{}
 		err = rows.Scan(&w.Order, &w.User, &w.Sum, &w.ProcessedAt)
 		if err != nil {
 			return nil, err

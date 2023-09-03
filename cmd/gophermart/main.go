@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"github.com/go-chi/chi/v5"
+	"github.com/kholodmv/gophermart/internal/client"
 	"github.com/kholodmv/gophermart/internal/config"
 	"github.com/kholodmv/gophermart/internal/http-server/handlers"
 	"github.com/kholodmv/gophermart/internal/logger"
@@ -13,6 +15,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 func main() {
@@ -46,8 +49,20 @@ func main() {
 		}
 	}()
 
+	go func() {
+		c := client.New(cfg.AccrualSystemAddress, db, cfg.IntervalAccrualSystem, log)
+		c.ReportOrders()
+	}()
+
 	log.Info("server started")
 
 	<-done
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Error("error", err)
+	}
+
 	log.Info("stopping server")
 }

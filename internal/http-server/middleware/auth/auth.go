@@ -16,13 +16,13 @@ func AuthenticationMiddleware(next http.Handler) http.Handler {
 		}
 
 		token := authHeader[1]
-		userInfo, err := auth.GetUserInfo(token)
+		login, err := auth.GetLogin(token)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
 		}
 
-		newContext := context.WithValue(r.Context(), "userInfo", userInfo)
+		newContext := context.WithValue(r.Context(), "login", login)
 		next.ServeHTTP(w, r.WithContext(newContext))
 	})
 }

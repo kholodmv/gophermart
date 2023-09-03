@@ -1,4 +1,4 @@
-package models
+package withdraw
 
 type Balance struct {
 	Current   int64 `json:"current"`
