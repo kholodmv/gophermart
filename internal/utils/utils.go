@@ -33,3 +33,10 @@ func GenerateHashPassword(password string) (string, error) {
 
 	return hashPassword, nil
 }
+
+func CompareHashAndPassword(hash, password string) error {
+	decHash, err := hex.DecodeString(hash)
+
+	err = bcrypt.CompareHashAndPassword([]byte(decHash), []byte(password))
+	return err
+}

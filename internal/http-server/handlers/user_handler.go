@@ -28,7 +28,7 @@ func (mh *Handler) Register(res http.ResponseWriter, req *http.Request) {
 	}
 
 	var hashPass string
-	if newUser.HashPassword != "" {
+	if newUser.HashPassword == "" {
 		hashPass, err = utils.GenerateHashPassword(newUser.Password)
 		newUser.HashPassword = hashPass
 	}
@@ -73,7 +73,14 @@ func (mh *Handler) Login(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	_, err = mh.db.GetUser(req.Context(), credentials.Login)
+	user1, err := mh.db.GetUser(req.Context(), credentials.Login)
+	if err != nil {
+		mh.log.Error("Invalid username/password pair")
+		http.Error(res, "Invalid username/password pair", http.StatusUnauthorized)
+		return
+	}
+
+	err = utils.CompareHashAndPassword(user1.HashPassword, credentials.Password)
 	if err != nil {
 		mh.log.Error("Invalid username/password pair")
 		http.Error(res, "Invalid username/password pair", http.StatusUnauthorized)

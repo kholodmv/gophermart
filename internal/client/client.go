@@ -32,6 +32,12 @@ type Client struct {
 	log      *slog.Logger
 }
 
+type Accrual struct {
+	Order   string  `json:"order"`
+	Status  string  `json:"status"`
+	Accrual float32 `json:"accrual,omitempty"`
+}
+
 func New(address string, db storage.Storage, interval int, log *slog.Logger) *Client {
 	return &Client{
 		client:   resty.New().SetDebug(true),
@@ -93,9 +99,9 @@ func (c *Client) ReportOrders() {
 	}
 }
 
-func (c *Client) GetStatusOrderFromAccrualSystem(number order.Number) (*order.Order, error) {
+func (c *Client) GetStatusOrderFromAccrualSystem(number order.Number) (*Accrual, error) {
 	endpoint := fmt.Sprintf("%s%s", c.address, APIGetAccrual)
-	a := &order.Order{}
+	a := &Accrual{}
 	resp, err := c.client.R().
 		SetPathParam("number", string(number)).
 		SetResult(a).
@@ -118,7 +124,7 @@ func (c *Client) GetStatusOrderFromAccrualSystem(number order.Number) (*order.Or
 	return nil, errors.New("invalid status code")
 }
 
-func accrualToOrderStatus(status order.Status) order.Status {
+func accrualToOrderStatus(status string) order.Status {
 	switch status {
 	case StatusRegistered:
 		return order.StatusNew
