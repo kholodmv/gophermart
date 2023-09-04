@@ -27,7 +27,7 @@ const tableOrder = `
 		number VARCHAR(256) PRIMARY KEY,
 		user_login VARCHAR(256) NOT NULL,
 		status VARCHAR(256) NOT NULL,
-		accrual INT,
+		accrual DOUBLE PRECISION,
 		uploaded_at TIMESTAMP NOT NULL);`
 
 const tableWithdrawals = `

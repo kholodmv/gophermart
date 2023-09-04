@@ -6,11 +6,17 @@ import (
 )
 
 type Order struct {
-	UserLogin  string     `json:"-"`
+	/*UserLogin  string     `json:"-"`
 	Number     Number     `json:"number"`
 	Status     Status     `json:"status"`
 	Accrual    *float32   `json:"accrual,omitempty"`
-	UploadedAt *time.Time `json:"uploaded_at"`
+	UploadedAt *time.Time `json:"uploaded_at"`*/
+
+	UserLogin  string    `json:"-"`
+	Number     Number    `json:"number"`
+	Status     Status    `json:"status"`
+	Accrual    float32   `json:"accrual"`
+	UploadedAt time.Time `json:"uploaded_at"`
 }
 
 type Status string
@@ -29,8 +35,9 @@ func NewOrder(order *Order, login string, number int64) *Order {
 	order.Number = Number(strconv.FormatInt(number, 10))
 	order.UserLogin = login
 	order.Status = StatusNew
-	order.Accrual = nil
-	order.UploadedAt = &createTime
+	//order.Accrual = nil
+	//order.UploadedAt = &createTime
+	order.UploadedAt = createTime
 
 	return order
 }

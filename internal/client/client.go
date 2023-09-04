@@ -102,11 +102,10 @@ func (c *Client) ReportOrders() {
 
 func (c *Client) GetStatusOrderFromAccrualSystem(number order.Number) (*order.Order, error) {
 	endpoint := fmt.Sprintf("%s%s", c.address, APIGetAccrual)
-	//a := &Accrual{}
-	o := &order.Order{}
+	a := &order.Order{}
 	resp, err := c.client.R().
 		SetPathParam("number", string(number)).
-		SetResult(o).
+		SetResult(a).
 		Get(endpoint)
 	if err != nil {
 		c.log.Error("error client response - ", err)
@@ -115,7 +114,7 @@ func (c *Client) GetStatusOrderFromAccrualSystem(number order.Number) (*order.Or
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		return o, nil
+		return a, nil
 	case http.StatusTooManyRequests:
 		c.log.Info("too many requests")
 		time.Sleep(60 * time.Second)
