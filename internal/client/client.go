@@ -24,13 +24,6 @@ const (
 	StatusProcessed  = `PROCESSED`
 )
 
-type Accrual struct {
-	Number     string    `json:"number"`
-	Status     string    `json:"status"`
-	Accrual    float32   `json:"accrual"`
-	UploadedAt time.Time `json:"uploaded_at"`
-}
-
 type Client struct {
 	client   *resty.Client
 	address  string

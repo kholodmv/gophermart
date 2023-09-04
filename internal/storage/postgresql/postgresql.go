@@ -34,7 +34,7 @@ const tableWithdrawals = `
 	CREATE TABLE IF NOT EXISTS withdrawals(
 	    order_number VARCHAR(256) PRIMARY KEY,
 	    user_login VARCHAR(256) NOT NULL,
-		sum INT NOT NULL,
+		sum DOUBLE PRECISION NOT NULL,
 		processed_at TIMESTAMP NOT NULL);`
 
 var (
@@ -216,26 +216,26 @@ func (s *Storage) UpdateOrder(ctx context.Context, o *order.Order) error {
 	return nil
 }
 
-func (s *Storage) GetAccruals(ctx context.Context, login string) (int64, error) {
-	var accrual sql.NullInt64
+func (s *Storage) GetAccruals(ctx context.Context, login string) (float32, error) {
+	var accrual float32
 	row := s.db.QueryRowContext(ctx,
 		"SELECT sum(accrual) FROM orders WHERE login = $1", login)
 
 	if err := row.Scan(&accrual); err != nil {
 		return 0, err
 	}
-	return accrual.Int64, nil
+	return accrual, nil
 }
 
-func (s *Storage) GetWithdrawn(ctx context.Context, login string) (int64, error) {
-	var withdrawn sql.NullInt64
+func (s *Storage) GetWithdrawn(ctx context.Context, login string) (float32, error) {
+	var withdrawn float32
 	row := s.db.QueryRowContext(ctx,
 		"SELECT sum(sum) FROM withdrawals WHERE user_login = $1", login)
 
 	if err := row.Scan(&withdrawn); err != nil {
 		return 0, err
 	}
-	return withdrawn.Int64, nil
+	return withdrawn, nil
 }
 
 func (s *Storage) AddWithdrawal(ctx context.Context, wd *withdraw.Withdraw) error {

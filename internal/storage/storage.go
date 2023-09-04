@@ -17,9 +17,9 @@ type Storage interface {
 	GetOrderStatus(ctx context.Context, status order.Status) ([]order.Number, error)
 	UpdateOrder(ctx context.Context, o *order.Order) error
 
-	GetAccruals(ctx context.Context, login string) (int64, error)
+	GetAccruals(ctx context.Context, login string) (float32, error)
 
-	GetWithdrawn(ctx context.Context, login string) (int64, error)
+	GetWithdrawn(ctx context.Context, login string) (float32, error)
 	AddWithdrawal(ctx context.Context, wd *withdraw.Withdraw) error
 	GetWithdrawals(ctx context.Context, login string) ([]*withdraw.Withdraw, error)
 }
