@@ -41,7 +41,7 @@ type Client struct {
 func New(address string, db storage.Storage, interval int, log *slog.Logger) *Client {
 	return &Client{
 		client:   resty.New().SetDebug(true),
-		address:  "http://" + address,
+		address:  address,
 		db:       db,
 		interval: interval,
 		log:      log,
