@@ -25,9 +25,10 @@ const (
 )
 
 type Accrual struct {
-	Order   string   `json:"order"`
-	Status  string   `json:"status"`
-	Accrual *float64 `json:"accrual,omitempty"`
+	Number     string    `json:"number"`
+	Status     string    `json:"status"`
+	Accrual    float32   `json:"accrual"`
+	UploadedAt time.Time `json:"uploaded_at"`
 }
 
 type Client struct {
@@ -99,12 +100,13 @@ func (c *Client) ReportOrders() {
 	}
 }
 
-func (c *Client) GetStatusOrderFromAccrualSystem(number order.Number) (*Accrual, error) {
+func (c *Client) GetStatusOrderFromAccrualSystem(number order.Number) (*order.Order, error) {
 	endpoint := fmt.Sprintf("%s%s", c.address, APIGetAccrual)
-	a := &Accrual{}
+	//a := &Accrual{}
+	o := &order.Order{}
 	resp, err := c.client.R().
 		SetPathParam("number", string(number)).
-		SetResult(a).
+		SetResult(o).
 		Get(endpoint)
 	if err != nil {
 		c.log.Error("error client response - ", err)
@@ -113,7 +115,7 @@ func (c *Client) GetStatusOrderFromAccrualSystem(number order.Number) (*Accrual,
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		return a, nil
+		return o, nil
 	case http.StatusTooManyRequests:
 		c.log.Info("too many requests")
 		time.Sleep(60 * time.Second)
@@ -124,7 +126,7 @@ func (c *Client) GetStatusOrderFromAccrualSystem(number order.Number) (*Accrual,
 	return nil, errors.New("invalid status code")
 }
 
-func accrualToOrderStatus(status string) order.Status {
+func accrualToOrderStatus(status order.Status) order.Status {
 	switch status {
 	case StatusRegistered:
 		return order.StatusNew
