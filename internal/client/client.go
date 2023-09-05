@@ -55,46 +55,42 @@ func (c *Client) ReportOrders() {
 	go func() {
 		t := time.NewTicker(time.Duration(c.interval) * time.Second)
 		for {
-			select {
-			case <-t.C:
-				processingOrders, err := c.db.GetOrderStatus(context.Background(), order.StatusProcessing)
-				if err != nil {
-					c.log.Error("there are no orders with status PROCESSING in the database", err)
-					continue
-				}
-				newOrders, err := c.db.GetOrderStatus(context.Background(), order.StatusNew)
-				if err != nil {
-					c.log.Error("there are no orders with status NEW in the database", err)
-					continue
-				}
-				allOrders := append(processingOrders, newOrders...)
-				for _, number := range allOrders {
-					orderNumbers <- number
-				}
+			<-t.C
+			processingOrders, err := c.db.GetOrderStatus(context.Background(), order.StatusProcessing)
+			if err != nil {
+				c.log.Error("there are no orders with status PROCESSING in the database", err)
+				continue
+			}
+			newOrders, err := c.db.GetOrderStatus(context.Background(), order.StatusNew)
+			if err != nil {
+				c.log.Error("there are no orders with status NEW in the database", err)
+				continue
+			}
+			allOrders := append(processingOrders, newOrders...)
+			for _, number := range allOrders {
+				orderNumbers <- number
 			}
 		}
 	}()
 	for {
-		select {
-		case n := <-orderNumbers:
-			o := &order.Order{
-				Number: n,
-			}
-			a, err := c.GetStatusOrderFromAccrualSystem(n)
-			switch err {
-			case nil:
-				o.Status = accrualToOrderStatus(a.Status)
-				o.Accrual = a.Accrual
-			case ErrorOrderNotRegistered:
-				o.Status = order.StatusInvalid
-			default:
-				c.log.Error("default error - ", err)
-				continue
-			}
-			err = c.db.UpdateOrder(context.Background(), o)
-			if err != nil {
-				c.log.Error("can not update order in database", err)
-			}
+		n := <-orderNumbers
+		o := &order.Order{
+			Number: n,
+		}
+		a, err := c.GetStatusOrderFromAccrualSystem(n)
+		switch err {
+		case nil:
+			o.Status = accrualToOrderStatus(a.Status)
+			o.Accrual = a.Accrual
+		case ErrorOrderNotRegistered:
+			o.Status = order.StatusInvalid
+		default:
+			c.log.Error("default error - ", err)
+			continue
+		}
+		err = c.db.UpdateOrder(context.Background(), o)
+		if err != nil {
+			c.log.Error("can not update order in database", err)
 		}
 	}
 }

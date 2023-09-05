@@ -7,6 +7,12 @@ import (
 	"strings"
 )
 
+type loginKey string
+
+const (
+	keyPrincipalID loginKey = "login"
+)
+
 func AuthenticationMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := strings.Split(r.Header.Get("Authorization"), "Bearer ")
@@ -22,7 +28,7 @@ func AuthenticationMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		newContext := context.WithValue(r.Context(), "login", login)
+		newContext := context.WithValue(r.Context(), keyPrincipalID, login)
 		next.ServeHTTP(w, r.WithContext(newContext))
 	})
 }

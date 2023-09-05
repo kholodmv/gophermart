@@ -43,6 +43,7 @@ func (mh *Handler) PostWithdrawFromBalance(res http.ResponseWriter, req *http.Re
 		Current:   currentBalance - withdrawnPoints,
 		Withdrawn: withdrawnPoints,
 	}
+	mh.log.Info("balance withdrawn", balance.Withdrawn)
 	if wd.Sum > balance.Current {
 		mh.log.Error("there are not enough funds on the account")
 		http.Error(res, "there are not enough funds on the account", http.StatusPaymentRequired)

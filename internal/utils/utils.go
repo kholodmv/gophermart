@@ -35,8 +35,8 @@ func GenerateHashPassword(password string) (string, error) {
 }
 
 func CompareHashAndPassword(hash, password string) error {
-	decHash, err := hex.DecodeString(hash)
+	decHash, _ := hex.DecodeString(hash)
 
-	err = bcrypt.CompareHashAndPassword([]byte(decHash), []byte(password))
+	err := bcrypt.CompareHashAndPassword([]byte(decHash), []byte(password))
 	return err
 }

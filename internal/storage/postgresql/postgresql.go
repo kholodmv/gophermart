@@ -213,8 +213,7 @@ func (s *Storage) UpdateOrder(ctx context.Context, o *order.Order) error {
 		o.Number,
 	)
 	if err != nil {
-		//logger.Logger.Error(err)
-		//return fmt.Errorf("%s: %w", db.ErrSomeWrong, err)
+		return fmt.Errorf("%s: %w", errors.New("can't update order"), err)
 	}
 	return nil
 }
