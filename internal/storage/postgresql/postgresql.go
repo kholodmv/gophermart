@@ -142,10 +142,6 @@ func (s *Storage) GetOrders(ctx context.Context, login string) ([]*order.Order, 
 	}
 	defer rows.Close()
 
-	if err != nil {
-		return nil, err
-	}
-
 	orders := make([]*order.Order, 0)
 
 	for rows.Next() {
@@ -176,10 +172,6 @@ func (s *Storage) GetOrderStatus(ctx context.Context, status order.Status) ([]or
 		return nil, err
 	}
 	defer rows.Close()
-
-	if err != nil {
-		return nil, err
-	}
 
 	orders := make([]order.Number, 0)
 
@@ -258,10 +250,6 @@ func (s *Storage) GetWithdrawals(ctx context.Context, login string) ([]*withdraw
 		return nil, err
 	}
 	defer rows.Close()
-
-	if err != nil {
-		return nil, err
-	}
 
 	withdrawals := make([]*withdraw.Withdraw, 0)
 
