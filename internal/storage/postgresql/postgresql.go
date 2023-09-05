@@ -70,7 +70,7 @@ func New(storagePath string) (*Storage, error) {
 func (s *Storage) AddUser(ctx context.Context, u *user.User) error {
 	_, err := s.db.ExecContext(ctx, "INSERT INTO users (login, pass_hash) VALUES ($1, $2)", u.Login, u.HashPassword)
 	if err != nil {
-		return errors.New(`user is exist`)
+		return errors.New(`can not add user to db`)
 	}
 	return nil
 }
@@ -142,12 +142,11 @@ func (s *Storage) GetOrders(ctx context.Context, login string) ([]*order.Order, 
 	}
 	defer rows.Close()
 
-	columns, err := rows.Columns()
 	if err != nil {
 		return nil, err
 	}
 
-	orders := make([]*order.Order, 0, len(columns))
+	orders := make([]*order.Order, 0)
 
 	for rows.Next() {
 		o := &order.Order{}
@@ -178,12 +177,11 @@ func (s *Storage) GetOrderStatus(ctx context.Context, status order.Status) ([]or
 	}
 	defer rows.Close()
 
-	columns, err := rows.Columns()
 	if err != nil {
 		return nil, err
 	}
 
-	orders := make([]order.Number, 0, len(columns))
+	orders := make([]order.Number, 0)
 
 	for rows.Next() {
 		var o order.Order
@@ -261,12 +259,11 @@ func (s *Storage) GetWithdrawals(ctx context.Context, login string) ([]*withdraw
 	}
 	defer rows.Close()
 
-	columns, err := rows.Columns()
 	if err != nil {
 		return nil, err
 	}
 
-	withdrawals := make([]*withdraw.Withdraw, 0, len(columns))
+	withdrawals := make([]*withdraw.Withdraw, 0)
 
 	for rows.Next() {
 		w := &withdraw.Withdraw{}
