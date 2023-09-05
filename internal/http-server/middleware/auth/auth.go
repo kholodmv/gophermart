@@ -7,9 +7,9 @@ import (
 	"strings"
 )
 
-type loginKey string
+type key string
 
-var logkey loginKey = "login"
+var LoginKey key = "login"
 
 func AuthenticationMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -26,7 +26,7 @@ func AuthenticationMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		newContext := context.WithValue(r.Context(), logkey, login)
+		newContext := context.WithValue(r.Context(), LoginKey, login)
 		next.ServeHTTP(w, r.WithContext(newContext))
 	})
 }
