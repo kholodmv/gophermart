@@ -19,12 +19,14 @@ type Storage struct {
 
 const tableUser = `
     CREATE TABLE IF NOT EXISTS users(
-        login VARCHAR(256) PRIMARY KEY,
+		id SERIAL PRIMARY KEY,
+        login VARCHAR(256) UNIQUE NOT NULL,
         pass_hash VARCHAR(256) NOT NULL);`
 
 const tableOrder = `
 	CREATE TABLE IF NOT EXISTS orders(
-		number VARCHAR(256) PRIMARY KEY,
+	    id SERIAL PRIMARY KEY,
+		number VARCHAR(256) UNIQUE NOT NULL,
 		user_login VARCHAR(256) NOT NULL,
 		status VARCHAR(256) NOT NULL,
 		accrual DOUBLE PRECISION,
@@ -32,7 +34,8 @@ const tableOrder = `
 
 const tableWithdrawals = `
 	CREATE TABLE IF NOT EXISTS withdrawals(
-	    order_number VARCHAR(256) PRIMARY KEY,
+	    id SERIAL PRIMARY KEY,
+	    order_number VARCHAR(256) UNIQUE,
 	    user_login VARCHAR(256) NOT NULL,
 		sum DOUBLE PRECISION NOT NULL,
 		processed_at TIMESTAMP NOT NULL);`
@@ -219,7 +222,7 @@ func (s *Storage) UpdateOrder(ctx context.Context, o *order.Order) error {
 func (s *Storage) GetAccruals(ctx context.Context, login string) (float32, error) {
 	var accrual float32
 	row := s.db.QueryRowContext(ctx,
-		"SELECT sum(accrual) FROM orders WHERE login = $1", login)
+		"SELECT sum(accrual) FROM orders WHERE user_login = $1", login)
 
 	if err := row.Scan(&accrual); err != nil {
 		return 0, err
