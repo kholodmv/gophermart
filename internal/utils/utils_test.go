@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"github.com/stretchr/testify/assert"
 	"log"
 	"testing"
@@ -99,13 +100,21 @@ var compareGenHashPassTests = []compareHashPassCase{
 			err: nil,
 		},
 	},
+	{
+		name:     "Unsuccessful compare hash and password",
+		hash:     "243261243130242f69376e4730457a4f7a43476542377269433343304f7144424f742e513563313971696e6f4751684b4e76355a6c646f5456655636",
+		password: "test1",
+		want: compareHashPassWant{
+			err: errors.New("crypto/bcrypt: hashedPassword is not the hash of the given password"),
+		},
+	},
 }
 
 func TestCompareHashAndPassword(t *testing.T) {
 	for _, test := range compareGenHashPassTests {
 		t.Run(test.name, func(t *testing.T) {
 			err := CompareHashAndPassword(test.hash, test.password)
-			assert.Equal(t, err, nil)
+			assert.Equal(t, err, test.want.err)
 		})
 	}
 }
