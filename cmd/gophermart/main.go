@@ -52,9 +52,9 @@ func main() {
 
 	done := make(chan struct{})
 	wg := &sync.WaitGroup{}
-	wg.Add(1)
 	c := client.New(cfg.AccrualSystemAddress, db, cfg.IntervalAccrualSystem, log)
 	go func() {
+		wg.Add(1)
 		c.ReportOrders(done)
 		wg.Done()
 	}()
