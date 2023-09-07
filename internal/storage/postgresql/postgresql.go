@@ -41,9 +41,11 @@ const tableWithdrawals = `
 		processed_at TIMESTAMP NOT NULL);`
 
 var (
-	ErrorNotFound   = errors.New(`can not get order by number`)
-	ErrorOrderAdded = errors.New(`order number added yet by this user`)
-	ErrorOrderExist = errors.New(`order number added yet by another user`)
+	ErrorNotFound       = errors.New(`can not get order by number`)
+	ErrorOrderAdded     = errors.New(`order number added yet by this user`)
+	ErrorOrderExist     = errors.New(`order number added yet by another user`)
+	ErrorNotEnoughFunds = errors.New(`there are not enough funds on the account`)
+	ErrorAddWithdrawal  = errors.New(`error add withdrawal`)
 )
 
 func New(storagePath string) (*Storage, error) {
@@ -230,13 +232,55 @@ func (s *Storage) GetWithdrawn(ctx context.Context, login string) (float32, erro
 	return withdrawn, nil
 }
 
-func (s *Storage) AddWithdrawal(ctx context.Context, wd withdraw.Withdraw) error {
-	_, err := s.db.ExecContext(ctx, "INSERT INTO withdrawals (order_number, user_login, sum, processed_at) VALUES ($1, $2, $3, $4)",
+func (s *Storage) AddWithdrawal(ctx context.Context, wd withdraw.Withdraw, login string) (*withdraw.Withdraw, error) {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+
+	var accrual float32
+	row := tx.QueryRowContext(ctx,
+		"SELECT sum(accrual) FROM orders WHERE user_login = $1", login)
+	if err = row.Scan(&accrual); err != nil {
+		s.log.Error("error get current balance")
+		tx.Rollback()
+		return nil, err
+	}
+
+	var withdrawn float32
+	row = tx.QueryRowContext(ctx,
+		"SELECT coalesce(SUM(sum), 0.00) FROM withdrawals WHERE user_login = $1", login)
+	if err = row.Scan(&withdrawn); err != nil {
+		s.log.Error("error get withdrawn")
+		tx.Rollback()
+		return nil, err
+	}
+
+	balance := withdraw.Balance{
+		Current:   accrual - withdrawn,
+		Withdrawn: withdrawn,
+	}
+
+	//s.log.Info("balance withdrawn", balance.Withdrawn)
+
+	if wd.Sum > balance.Current {
+		s.log.Error("there are not enough funds on the account")
+		return nil, ErrorNotEnoughFunds
+	}
+
+	_, err = s.db.ExecContext(ctx, "INSERT INTO withdrawals (order_number, user_login, sum, processed_at) VALUES ($1, $2, $3, $4)",
 		wd.Order, wd.User, wd.Sum, wd.ProcessedAt)
 	if err != nil {
-		return errors.New(`order not added`)
+		s.log.Error("error add withdrawal")
+		tx.Rollback()
+		return nil, ErrorAddWithdrawal
 	}
-	return nil
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
+	return &wd, nil
 }
 
 func (s *Storage) GetWithdrawals(ctx context.Context, login string) ([]*withdraw.Withdraw, error) {

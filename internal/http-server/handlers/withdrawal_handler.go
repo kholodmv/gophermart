@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/kholodmv/gophermart/internal/models/withdraw"
+	"github.com/kholodmv/gophermart/internal/storage/postgresql"
 	"github.com/kholodmv/gophermart/internal/utils"
 	"golang.org/x/exp/slog"
 	"net/http"
@@ -30,33 +31,17 @@ func (mh *Handler) PostWithdrawFromBalance(res http.ResponseWriter, req *http.Re
 	createdTime := time.Now()
 	wd.ProcessedAt = &createdTime
 
-	currentBalance, err := mh.db.GetAccruals(req.Context(), login)
-	if err != nil {
-		mh.log.Error("error get current balance")
-	}
-	withdrawnPoints, err := mh.db.GetWithdrawn(req.Context(), login)
-	if err != nil {
-		mh.log.Error("error get withdrawn")
-	}
-
-	balance := withdraw.Balance{
-		Current:   currentBalance - withdrawnPoints,
-		Withdrawn: withdrawnPoints,
-	}
-	mh.log.Info("balance withdrawn", balance.Withdrawn)
-	if wd.Sum > balance.Current {
-		mh.log.Error("there are not enough funds on the account")
+	w, err := mh.db.AddWithdrawal(req.Context(), wd, login)
+	switch err {
+	case postgresql.ErrorNotEnoughFunds:
 		http.Error(res, "there are not enough funds on the account", http.StatusPaymentRequired)
+		return
+	case postgresql.ErrorAddWithdrawal:
+		http.Error(res, "statusConflict", http.StatusConflict)
 		return
 	}
 
-	err = mh.db.AddWithdrawal(req.Context(), wd)
-	if err != nil {
-		mh.log.Error("error add withdrawal")
-		http.Error(res, "statusConflict", http.StatusConflict)
-	}
-
-	if !utils.IsValidLuhnNumber(wd.Order) {
+	if !utils.IsValidLuhnNumber(w.Order) {
 		mh.log.Error("invalid order number format")
 		http.Error(res, "Invalid order number format", http.StatusUnprocessableEntity)
 		return
@@ -81,12 +66,6 @@ func (mh *Handler) GetWithdrawals(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	/*if len(withdrawals) == 0 {
-		//http.Error(res, "StatusNoContent", http.StatusNoContent)
-		res.WriteHeader(http.StatusNoContent)
-		return
-	}*/
-	//return c.JSON(http.StatusOK, withdrawals)
 
 	res.Header().Set("Content-Type", "application/json")
 	if len(withdrawals) == 0 {

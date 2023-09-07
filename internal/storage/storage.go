@@ -21,6 +21,6 @@ type Storage interface {
 	GetAccruals(ctx context.Context, login string) (float32, error)
 
 	GetWithdrawn(ctx context.Context, login string) (float32, error)
-	AddWithdrawal(ctx context.Context, wd withdraw.Withdraw) error
 	GetWithdrawals(ctx context.Context, login string) ([]*withdraw.Withdraw, error)
+	AddWithdrawal(ctx context.Context, wd withdraw.Withdraw, login string) (*withdraw.Withdraw, error)
 }
