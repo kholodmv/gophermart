@@ -11,7 +11,7 @@ type want struct {
 
 type testCase struct {
 	name   string
-	order  *Order
+	order  Order
 	login  string
 	number int64
 	want   want
@@ -20,7 +20,7 @@ type testCase struct {
 var hashTests = []testCase{
 	{
 		name:   "Return full order with status 'New'",
-		order:  &Order{},
+		order:  Order{},
 		login:  "login",
 		number: 123456,
 		want: want{
