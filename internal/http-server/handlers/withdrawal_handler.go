@@ -51,7 +51,7 @@ func (mh *Handler) PostWithdrawFromBalance(res http.ResponseWriter, req *http.Re
 		return
 	}
 
-	err = mh.db.AddWithdrawal(req.Context(), &wd)
+	err = mh.db.AddWithdrawal(req.Context(), wd)
 	if err != nil {
 		mh.log.Error("error add withdrawal")
 		http.Error(res, "statusConflict", http.StatusConflict)

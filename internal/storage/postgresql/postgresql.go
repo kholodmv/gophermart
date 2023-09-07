@@ -67,7 +67,7 @@ func New(storagePath string) (*Storage, error) {
 	return &Storage{db: db}, nil
 }
 
-func (s *Storage) AddUser(ctx context.Context, u *user.User) error {
+func (s *Storage) AddUser(ctx context.Context, u user.User) error {
 	_, err := s.db.ExecContext(ctx, "INSERT INTO users (login, pass_hash) VALUES ($1, $2)", u.Login, u.HashPassword)
 	if err != nil {
 		return errors.New(`can not add user to db`)
@@ -86,7 +86,7 @@ func (s *Storage) GetUser(ctx context.Context, login string) (*user.User, error)
 	return u, nil
 }
 
-func (s *Storage) AddOrder(ctx context.Context, o *order.Order) error {
+func (s *Storage) AddOrder(ctx context.Context, o order.Order) error {
 	stmt, err := s.db.Prepare("INSERT INTO orders(number, user_login, status, accrual, uploaded_at) values($1,$2,$3,$4,$5)")
 	if err != nil {
 		return err
@@ -192,7 +192,7 @@ func (s *Storage) GetOrderWithStatuses(ctx context.Context, processing order.Sta
 	return orders, nil
 }
 
-func (s *Storage) UpdateOrder(ctx context.Context, o *order.Order) error {
+func (s *Storage) UpdateOrder(ctx context.Context, o order.Order) error {
 	stmt, err := s.db.Prepare("UPDATE orders SET status=$1, accrual=$2 WHERE number=$3")
 	if err != nil {
 		return err
@@ -230,7 +230,7 @@ func (s *Storage) GetWithdrawn(ctx context.Context, login string) (float32, erro
 	return withdrawn, nil
 }
 
-func (s *Storage) AddWithdrawal(ctx context.Context, wd *withdraw.Withdraw) error {
+func (s *Storage) AddWithdrawal(ctx context.Context, wd withdraw.Withdraw) error {
 	_, err := s.db.ExecContext(ctx, "INSERT INTO withdrawals (order_number, user_login, sum, processed_at) VALUES ($1, $2, $3, $4)",
 		wd.Order, wd.User, wd.Sum, wd.ProcessedAt)
 	if err != nil {

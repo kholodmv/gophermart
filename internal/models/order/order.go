@@ -23,7 +23,7 @@ const (
 	StatusProcessed  Status = "PROCESSED"
 )
 
-func NewOrder(order *Order, login string, number int64) *Order {
+func NewOrder(order Order, login string, number int64) Order {
 	createTime := time.Now()
 
 	order.Number = Number(strconv.FormatInt(number, 10))

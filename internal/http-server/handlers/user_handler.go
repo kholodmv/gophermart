@@ -36,7 +36,7 @@ func (mh *Handler) Register(res http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		mh.log.Error("Error generate hash password")
 	}
-	err = mh.db.AddUser(req.Context(), &newUser)
+	err = mh.db.AddUser(req.Context(), newUser)
 	if err != nil {
 		mh.log.Error("New user has not been register", sl.Err(err))
 		res.WriteHeader(http.StatusConflict)

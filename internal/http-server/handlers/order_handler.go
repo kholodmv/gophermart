@@ -46,7 +46,7 @@ func (mh *Handler) PostOrderNumber(res http.ResponseWriter, req *http.Request) {
 	login := req.Context().Value(auth.LoginKey).(string)
 
 	var orderNew order.Order
-	fullOrder := order.NewOrder(&orderNew, login, number)
+	fullOrder := order.NewOrder(orderNew, login, number)
 	err = mh.db.AddOrder(req.Context(), fullOrder)
 	if err != nil {
 		switch {

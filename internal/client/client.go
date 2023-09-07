@@ -59,7 +59,7 @@ func (c *Client) ReportOrders(done <-chan struct{}) {
 		}
 	}()
 	for n := range orders {
-		o := &order.Order{
+		o := order.Order{
 			Number: n,
 		}
 		a, err := c.GetStatusOrderFromAccrualSystem(n)
