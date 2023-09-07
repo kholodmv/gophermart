@@ -5,10 +5,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgerrcode"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/kholodmv/gophermart/internal/models/order"
 	"github.com/kholodmv/gophermart/internal/models/user"
 	"github.com/kholodmv/gophermart/internal/models/withdraw"
+	"github.com/lib/pq"
 	"golang.org/x/exp/slog"
 )
 
@@ -104,18 +106,19 @@ func (s *Storage) AddOrder(ctx context.Context, o order.Order) error {
 		o.UploadedAt,
 	)
 	if err != nil {
-		existOrder, err := s.GetOrder(ctx, o.Number)
-		if err != nil {
-			s.log.Error("error get order by order number", err)
-			return ErrorNotFound
-		}
-		if existOrder.UserLogin == o.UserLogin {
-			s.log.Error("error this order number already add by this user", err)
-			return ErrorOrderAdded
-		}
-		if existOrder.Number == o.Number {
-			s.log.Error("error this order number already add by another user", err)
-			return ErrorOrderExist
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) && pgerrcode.IsIntegrityConstraintViolation(string(pqErr.Code)) {
+			existOrder, err := s.GetOrder(ctx, o.Number)
+			if err != nil {
+				s.log.Error("error get order by order number", err)
+				return ErrorNotFound
+			}
+			if existOrder.UserLogin == o.UserLogin {
+				s.log.Error("error this order number already add by this user", err)
+				return ErrorOrderAdded
+			} else {
+				return ErrorOrderExist
+			}
 		}
 	}
 	return nil
