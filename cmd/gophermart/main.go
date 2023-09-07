@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -50,11 +51,19 @@ func main() {
 	}()
 	log.Info("server started")
 
+	var wg sync.WaitGroup
 	done := make(chan struct{})
 	c := client.New(cfg.AccrualSystemAddress, db, cfg.IntervalAccrualSystem, log)
 	go func() {
-		c.ReportOrders(done)
+		wg.Add(1)
+		c.ReportOrders(done, &wg)
 	}()
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+	for range done {
+	}
 
 	<-stop
 

@@ -10,6 +10,7 @@ import (
 	"golang.org/x/exp/slog"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -36,7 +37,8 @@ var (
 	ErrorInvalidStatusCode  = errors.New("invalid status code")
 )
 
-func (c *Client) ReportOrders(done chan struct{}) {
+func (c *Client) ReportOrders(done chan struct{}, wg *sync.WaitGroup) {
+	defer wg.Done()
 	orders := make(chan order.Number)
 	go func() {
 		t := time.NewTicker(time.Duration(c.interval) * time.Second)
@@ -51,10 +53,11 @@ func (c *Client) ReportOrders(done chan struct{}) {
 					c.log.Error("there are no orders with status PROCESSING or status NEW in the database", err)
 					continue
 				}
-				
+
 				for _, number := range ordersStatus {
 					orders <- number
 				}
+				done <- struct{}{}
 			}
 		}
 	}()
