@@ -49,20 +49,19 @@ func main() {
 			log.Error("failed to start server")
 		}
 	}()
+	log.Info("server started")
 
 	done := make(chan struct{})
-	wg := &sync.WaitGroup{}
 	c := client.New(cfg.AccrualSystemAddress, db, cfg.IntervalAccrualSystem, log)
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		c.ReportOrders(done)
 		wg.Done()
 	}()
 
-	wg.Wait()
 	close(done)
-
-	log.Info("server started")
+	wg.Wait()
 
 	<-stop
 
