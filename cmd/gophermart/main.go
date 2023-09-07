@@ -59,10 +59,11 @@ func main() {
 		c.ReportOrders(done)
 		wg.Done()
 	}()
-	close(done)
-	wg.Wait()
 
 	<-stop
+
+	close(done)
+	wg.Wait()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
