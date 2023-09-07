@@ -36,7 +36,7 @@ var (
 	ErrorInvalidStatusCode  = errors.New("invalid status code")
 )
 
-func (c *Client) ReportOrders(done chan struct{}) {
+func (c *Client) ReportOrders(done <-chan struct{}) {
 	orders := make(chan order.Number)
 	go func() {
 		t := time.NewTicker(time.Duration(c.interval) * time.Second)
