@@ -58,8 +58,9 @@ func main() {
 		c.ReportOrders(done)
 		wg.Done()
 	}()
-	close(done)
+
 	wg.Wait()
+	close(done)
 
 	log.Info("server started")
 

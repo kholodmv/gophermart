@@ -51,9 +51,8 @@ func (c *Client) ReportOrders(done chan struct{}) {
 					c.log.Error("there are no orders with status PROCESSING or status NEW in the database", err)
 					continue
 				}
-
-				allOrders := append(ordersStatus)
-				for _, number := range allOrders {
+				
+				for _, number := range ordersStatus {
 					orders <- number
 				}
 			}
