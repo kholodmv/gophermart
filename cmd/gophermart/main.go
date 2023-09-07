@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -36,8 +37,8 @@ func main() {
 
 	log.Info("initializing server", slog.String("address", cfg.RunAddress))
 
-	done := make(chan os.Signal, 1)
-	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	srv := &http.Server{
 		Addr:    cfg.RunAddress,
 		Handler: router,
@@ -49,14 +50,20 @@ func main() {
 		}
 	}()
 
+	done := make(chan struct{})
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	c := client.New(cfg.AccrualSystemAddress, db, cfg.IntervalAccrualSystem, log)
 	go func() {
-		c := client.New(cfg.AccrualSystemAddress, db, cfg.IntervalAccrualSystem, log)
-		c.ReportOrders()
+		c.ReportOrders(done)
+		wg.Done()
 	}()
+	close(done)
+	wg.Wait()
 
 	log.Info("server started")
 
-	<-done
+	<-stop
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

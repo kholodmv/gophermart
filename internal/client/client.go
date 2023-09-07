@@ -9,19 +9,8 @@ import (
 	"github.com/kholodmv/gophermart/internal/storage"
 	"golang.org/x/exp/slog"
 	"net/http"
-	"sync"
+	"strconv"
 	"time"
-)
-
-const APIGetAccrual = `/api/orders/{number}`
-
-var ErrorOrderNotRegistered = errors.New(`order isn't registered in system`)
-
-const (
-	StatusRegistered = `REGISTERED`
-	StatusInvalid    = `INVALID`
-	StatusProcessing = `PROCESSING`
-	StatusProcessed  = `PROCESSED`
 )
 
 type Client struct {
@@ -30,12 +19,6 @@ type Client struct {
 	db       storage.Storage
 	interval int
 	log      *slog.Logger
-}
-
-type Accrual struct {
-	Order   string  `json:"order"`
-	Status  string  `json:"status"`
-	Accrual float32 `json:"accrual,omitempty"`
 }
 
 func New(address string, db storage.Storage, interval int, log *slog.Logger) *Client {
@@ -48,32 +31,35 @@ func New(address string, db storage.Storage, interval int, log *slog.Logger) *Cl
 	}
 }
 
-func (c *Client) ReportOrders() {
-	orderNumbers := make(chan order.Number)
-	wg := &sync.WaitGroup{}
-	wg.Add(1)
+var (
+	ErrorOrderNotRegistered = errors.New(`order isn't registered in system`)
+	ErrorInvalidStatusCode  = errors.New("invalid status code")
+)
+
+func (c *Client) ReportOrders(done chan struct{}) {
+	orders := make(chan order.Number)
 	go func() {
 		t := time.NewTicker(time.Duration(c.interval) * time.Second)
 		for {
-			<-t.C
-			processingOrders, err := c.db.GetOrderStatus(context.Background(), order.StatusProcessing)
-			if err != nil {
-				c.log.Error("there are no orders with status PROCESSING in the database", err)
-				continue
-			}
-			newOrders, err := c.db.GetOrderStatus(context.Background(), order.StatusNew)
-			if err != nil {
-				c.log.Error("there are no orders with status NEW in the database", err)
-				continue
-			}
-			allOrders := append(processingOrders, newOrders...)
-			for _, number := range allOrders {
-				orderNumbers <- number
+			select {
+			case <-done:
+				close(orders)
+				return
+			case <-t.C:
+				ordersStatus, err := c.db.GetOrderWithStatuses(context.Background(), order.StatusProcessing, order.StatusNew)
+				if err != nil {
+					c.log.Error("there are no orders with status PROCESSING or status NEW in the database", err)
+					continue
+				}
+
+				allOrders := append(ordersStatus)
+				for _, number := range allOrders {
+					orders <- number
+				}
 			}
 		}
 	}()
-	for {
-		n := <-orderNumbers
+	for n := range orders {
 		o := &order.Order{
 			Number: n,
 		}
@@ -112,12 +98,16 @@ func (c *Client) GetStatusOrderFromAccrualSystem(number order.Number) (*Accrual,
 		return a, nil
 	case http.StatusTooManyRequests:
 		c.log.Info("too many requests")
-		time.Sleep(60 * time.Second)
+		retryAfter, err := strconv.Atoi(resp.Header().Get("Retry-After"))
+		if err != nil {
+			return nil, err
+		}
+		time.Sleep(time.Duration(retryAfter) * time.Second)
 	case http.StatusNoContent:
 		c.log.Info("no content")
 		return nil, ErrorOrderNotRegistered
 	}
-	return nil, errors.New("invalid status code")
+	return nil, ErrorInvalidStatusCode
 }
 
 func accrualToOrderStatus(status string) order.Status {

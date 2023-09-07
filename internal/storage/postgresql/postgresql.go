@@ -161,13 +161,13 @@ func (s *Storage) GetOrders(ctx context.Context, login string) ([]*order.Order, 
 	return orders, nil
 }
 
-func (s *Storage) GetOrderStatus(ctx context.Context, status order.Status) ([]order.Number, error) {
-	stmt, err := s.db.Prepare("SELECT number FROM orders WHERE status=$1 ORDER BY uploaded_at")
+func (s *Storage) GetOrderWithStatuses(ctx context.Context, processing order.Status, new order.Status) ([]order.Number, error) {
+	stmt, err := s.db.Prepare("SELECT number FROM orders WHERE status=$1 OR status=$2 ORDER BY uploaded_at")
 	if err != nil {
 		return nil, err
 	}
 
-	rows, err := stmt.QueryContext(ctx, &status)
+	rows, err := stmt.QueryContext(ctx, &processing, &new)
 	if err != nil {
 		return nil, err
 	}
