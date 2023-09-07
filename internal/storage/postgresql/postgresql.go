@@ -72,6 +72,7 @@ func New(storagePath string) (*Storage, error) {
 func (s *Storage) AddUser(ctx context.Context, u user.User) error {
 	_, err := s.db.ExecContext(ctx, "INSERT INTO users (login, pass_hash) VALUES ($1, $2)", u.Login, u.HashPassword)
 	if err != nil {
+		s.log.Error("error insert user to table", err)
 		return errors.New(`can not add user to db`)
 	}
 	return nil
@@ -81,8 +82,8 @@ func (s *Storage) GetUser(ctx context.Context, login string) (*user.User, error)
 	u := new(user.User)
 	row := s.db.QueryRowContext(ctx,
 		"SELECT login, pass_hash FROM users WHERE login = $1", login)
-
 	if err := row.Scan(&u.Login, &u.HashPassword); err != nil {
+		s.log.Error("error get user by login", err)
 		return nil, err
 	}
 	return u, nil
@@ -91,6 +92,7 @@ func (s *Storage) GetUser(ctx context.Context, login string) (*user.User, error)
 func (s *Storage) AddOrder(ctx context.Context, o order.Order) error {
 	stmt, err := s.db.Prepare("INSERT INTO orders(number, user_login, status, accrual, uploaded_at) values($1,$2,$3,$4,$5)")
 	if err != nil {
+		s.log.Error("error insert order number to table", err)
 		return err
 	}
 	_, err = stmt.ExecContext(
@@ -104,11 +106,15 @@ func (s *Storage) AddOrder(ctx context.Context, o order.Order) error {
 	if err != nil {
 		existOrder, err := s.GetOrder(ctx, o.Number)
 		if err != nil {
+			s.log.Error("error get order by order number", err)
 			return ErrorNotFound
 		}
 		if existOrder.UserLogin == o.UserLogin {
+			s.log.Error("error this order number already add by this user", err)
 			return ErrorOrderAdded
-		} else {
+		}
+		if existOrder.Number == o.Number {
+			s.log.Error("error this order number already add by another user", err)
 			return ErrorOrderExist
 		}
 	}
@@ -118,6 +124,7 @@ func (s *Storage) AddOrder(ctx context.Context, o order.Order) error {
 func (s *Storage) GetOrder(ctx context.Context, number order.Number) (*order.Order, error) {
 	stmt, err := s.db.Prepare("SELECT number, user_login, status, accrual, uploaded_at FROM orders WHERE number=$1")
 	if err != nil {
+		s.log.Error("error get order from table", err)
 		return nil, err
 	}
 	o := &order.Order{}
@@ -135,11 +142,12 @@ func (s *Storage) GetOrder(ctx context.Context, number order.Number) (*order.Ord
 func (s *Storage) GetOrders(ctx context.Context, login string) ([]*order.Order, error) {
 	stmt, err := s.db.Prepare("SELECT number, user_login, status, accrual, uploaded_at FROM orders WHERE user_login = $1 ORDER BY uploaded_at DESC")
 	if err != nil {
+		s.log.Error("error prepare for get orders from table", err)
 		return nil, err
 	}
-
 	rows, err := stmt.QueryContext(ctx, login)
 	if err != nil {
+		s.log.Error("error get order from table", err)
 		return nil, err
 	}
 	defer rows.Close()
