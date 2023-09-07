@@ -256,11 +256,7 @@ func (s *Storage) AddWithdrawal(ctx context.Context, wd withdraw.Withdraw, login
 		return nil, err
 	}
 
-	balance := withdraw.Balance{
-		Current: accrual - withdrawn,
-	}
-
-	if wd.Sum > balance.Current {
+	if wd.Sum > accrual-withdrawn {
 		s.log.Error("there are not enough funds on the account")
 		return nil, ErrorNotEnoughFunds
 	}
