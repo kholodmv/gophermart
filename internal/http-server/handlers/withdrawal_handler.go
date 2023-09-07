@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/kholodmv/gophermart/internal/http-server/middleware/auth"
 	"github.com/kholodmv/gophermart/internal/models/withdraw"
 	"github.com/kholodmv/gophermart/internal/utils"
 	"golang.org/x/exp/slog"
@@ -25,7 +24,7 @@ func (mh *Handler) PostWithdrawFromBalance(res http.ResponseWriter, req *http.Re
 		return
 	}
 
-	login := req.Context().Value(auth.LoginKey).(string)
+	login := utils.GetLogin(req.Context())
 
 	wd.User = login
 	createdTime := time.Now()
@@ -74,7 +73,7 @@ func (mh *Handler) GetWithdrawals(res http.ResponseWriter, req *http.Request) {
 		slog.String("request_id", middleware.GetReqID(req.Context())),
 	)
 
-	login := req.Context().Value(auth.LoginKey).(string)
+	login := utils.GetLogin(req.Context())
 
 	withdrawals, err := mh.db.GetWithdrawals(req.Context(), login)
 	if err != nil {
@@ -105,7 +104,7 @@ func (mh *Handler) GetBalance(res http.ResponseWriter, req *http.Request) {
 		slog.String("request_id", middleware.GetReqID(req.Context())),
 	)
 
-	login := req.Context().Value(auth.LoginKey).(string)
+	login := utils.GetLogin(req.Context())
 
 	currentBalance, err := mh.db.GetAccruals(req.Context(), login)
 	if err != nil {

@@ -1,7 +1,9 @@
 package utils
 
 import (
+	"context"
 	"encoding/hex"
+	"github.com/kholodmv/gophermart/internal/http-server/middleware/auth"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -39,4 +41,8 @@ func CompareHashAndPassword(hash, password string) error {
 
 	err := bcrypt.CompareHashAndPassword([]byte(decHash), []byte(password))
 	return err
+}
+
+func GetLogin(ctx context.Context) string {
+	return ctx.Value(auth.LoginKey).(string)
 }

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/kholodmv/gophermart/internal/http-server/middleware/auth"
 	"github.com/kholodmv/gophermart/internal/models/order"
 	"github.com/kholodmv/gophermart/internal/storage/postgresql"
 	"github.com/kholodmv/gophermart/internal/utils"
@@ -43,7 +42,7 @@ func (mh *Handler) PostOrderNumber(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	login := req.Context().Value(auth.LoginKey).(string)
+	login := utils.GetLogin(req.Context())
 
 	var orderNew order.Order
 	fullOrder := order.NewOrder(orderNew, login, number)
@@ -75,7 +74,7 @@ func (mh *Handler) GetOrderNumbers(res http.ResponseWriter, req *http.Request) {
 		slog.String("request_id", middleware.GetReqID(req.Context())),
 	)
 
-	login := req.Context().Value(auth.LoginKey).(string)
+	login := utils.GetLogin(req.Context())
 
 	orders, err := mh.db.GetOrders(req.Context(), login)
 	if err != nil {
