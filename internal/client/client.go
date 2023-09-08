@@ -61,11 +61,12 @@ func (c *Client) ReportOrders(done <-chan struct{}) {
 	}()
 	g, _ := errgroup.WithContext(context.Background())
 	for n := range orders {
-		o := order.Order{
-			Number: n,
-		}
 
 		g.Go(func() error {
+			o := order.Order{
+				Number: n,
+			}
+			
 			a, err := c.GetStatusOrderFromAccrualSystem(n)
 			switch err {
 			case nil:
