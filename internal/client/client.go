@@ -8,6 +8,7 @@ import (
 	"github.com/kholodmv/gophermart/internal/models/order"
 	"github.com/kholodmv/gophermart/internal/storage"
 	"golang.org/x/exp/slog"
+	"golang.org/x/sync/errgroup"
 	"net/http"
 	"strconv"
 	"time"
@@ -58,26 +59,33 @@ func (c *Client) ReportOrders(done <-chan struct{}) {
 			}
 		}
 	}()
+	g, _ := errgroup.WithContext(context.Background())
 	for n := range orders {
 		o := order.Order{
 			Number: n,
 		}
-		a, err := c.GetStatusOrderFromAccrualSystem(n)
-		switch err {
-		case nil:
-			o.Status = accrualToOrderStatus(a.Status)
-			o.Accrual = a.Accrual
-		case ErrorOrderNotRegistered:
-			o.Status = order.StatusInvalid
-		default:
-			c.log.Error("default error - ", err)
-			continue
-		}
-		err = c.db.UpdateOrder(context.Background(), o)
-		if err != nil {
-			c.log.Error("can not update order in database", err)
-		}
+
+		g.Go(func() error {
+			a, err := c.GetStatusOrderFromAccrualSystem(n)
+			switch err {
+			case nil:
+				o.Status = accrualToOrderStatus(a.Status)
+				o.Accrual = a.Accrual
+			case ErrorOrderNotRegistered:
+				o.Status = order.StatusInvalid
+			default:
+				c.log.Error("default error - ", err)
+				return err
+			}
+			err = c.db.UpdateOrder(context.Background(), o)
+			if err != nil {
+				c.log.Error("can not update order in database", err)
+			}
+			return err
+		})
 	}
+
+	g.Wait()
 }
 
 func (c *Client) GetStatusOrderFromAccrualSystem(number order.Number) (*Accrual, error) {
