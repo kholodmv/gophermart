@@ -63,11 +63,12 @@ func (c *Client) ReportOrders(done <-chan struct{}) {
 	for n := range orders {
 
 		g.Go(func() error {
+			number := n
 			o := order.Order{
-				Number: n,
+				Number: number,
 			}
-			
-			a, err := c.GetStatusOrderFromAccrualSystem(n)
+
+			a, err := c.GetStatusOrderFromAccrualSystem(number)
 			switch err {
 			case nil:
 				o.Status = accrualToOrderStatus(a.Status)
